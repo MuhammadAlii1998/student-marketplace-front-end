@@ -1,0 +1,8 @@
+node_modules
+dist
+.vitest
+coverage
+public
+build
+.bun
+bun.lockb
