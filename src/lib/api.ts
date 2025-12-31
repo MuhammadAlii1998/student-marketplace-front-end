@@ -1,10 +1,14 @@
 // Small API client wrapper using fetch and Vite env for base URL
-const BASE_URL = (import.meta.env.VITE_API_URL as string) || "http://localhost:3001/api";
+const BASE_URL = (import.meta.env.VITE_API_URL as string) || "http://localhost:4000/api";
 
 type RequestInitLike = RequestInit & { queryParams?: Record<string, string | number | boolean | undefined> };
 
 function buildUrl(path: string, params?: Record<string, string | number | boolean | undefined>) {
-  const url = new URL(path, BASE_URL);
+  // Remove leading slash from path to properly concatenate with BASE_URL
+  const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+  const fullUrl = `${BASE_URL}/${cleanPath}`;
+  const url = new URL(fullUrl);
+  
   if (params) {
     Object.entries(params).forEach(([k, v]) => {
       if (v !== undefined && v !== null) url.searchParams.set(k, String(v));

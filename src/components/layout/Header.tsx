@@ -1,9 +1,11 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ShoppingCart, Search, Menu, X, User, Plus, LogIn } from "lucide-react";
+import { ShoppingCart, Search, Menu, X, User, Plus, LogIn, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useIsAuthenticated, useLogout } from "@/hooks/useAuth";
+import { toast } from "sonner";
 import esilvLogo from "@/assets/esilv-logo.png";
 
 const navLinks = [
@@ -20,12 +22,24 @@ export function Header() {
   const [searchQuery, setSearchQuery] = useState("");
   const location = useLocation();
   const navigate = useNavigate();
+  const { isAuthenticated } = useIsAuthenticated();
+  const logout = useLogout();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
       setSearchQuery("");
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout.mutateAsync();
+      toast.success("Logged out successfully");
+      navigate("/");
+    } catch (error) {
+      toast.error("Failed to logout");
     }
   };
 
@@ -96,12 +110,25 @@ export function Header() {
             </Button>
           </Link>
 
-          <Link to="/login" className="hidden sm:block">
-            <Button variant="outline" size="sm" className="gap-2">
-              <LogIn className="h-4 w-4" />
-              Login
+          {isAuthenticated ? (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="hidden sm:flex gap-2"
+              onClick={handleLogout}
+              disabled={logout.isPending}
+            >
+              <LogOut className="h-4 w-4" />
+              {logout.isPending ? "Logging out..." : "Logout"}
             </Button>
-          </Link>
+          ) : (
+            <Link to="/login" className="hidden sm:block">
+              <Button variant="outline" size="sm" className="gap-2">
+                <LogIn className="h-4 w-4" />
+                Login
+              </Button>
+            </Link>
+          )}
 
           {/* Mobile Menu Toggle */}
           <Button
@@ -144,12 +171,27 @@ export function Header() {
                 {link.label}
               </Link>
             ))}
-            <Link to="/login" onClick={() => setIsMenuOpen(false)}>
-              <Button variant="outline" className="w-full mt-2 gap-2">
-                <LogIn className="h-4 w-4" />
-                Login
+            {isAuthenticated ? (
+              <Button 
+                variant="outline" 
+                className="w-full mt-2 gap-2"
+                onClick={() => {
+                  handleLogout();
+                  setIsMenuOpen(false);
+                }}
+                disabled={logout.isPending}
+              >
+                <LogOut className="h-4 w-4" />
+                {logout.isPending ? "Logging out..." : "Logout"}
               </Button>
-            </Link>
+            ) : (
+              <Link to="/login" onClick={() => setIsMenuOpen(false)}>
+                <Button variant="outline" className="w-full mt-2 gap-2">
+                  <LogIn className="h-4 w-4" />
+                  Login
+                </Button>
+              </Link>
+            )}
             <Link to="/sell" onClick={() => setIsMenuOpen(false)}>
               <Button className="w-full mt-2 gap-2">
                 <Plus className="h-4 w-4" />

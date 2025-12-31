@@ -1,7 +1,10 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { /*getProductById, products*/ } from "@/data/products";
 import { useProduct, useProducts } from "@/hooks/useProducts";
+import { useAddToCart } from "@/hooks/useCart";
+import { useToggleFavorite } from "@/hooks/useFavorites";
+import { useIsAuthenticated } from "@/hooks/useAuth";
 import { ProductCard } from "@/components/ProductCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,9 +33,14 @@ const conditionColors = {
 
 const ProductDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { data: product, isLoading: productLoading } = useProduct(id);
   const { data: products = [] } = useProducts();
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  
+  const { isAuthenticated } = useIsAuthenticated();
+  const addToCart = useAddToCart();
+  const toggleFavorite = useToggleFavorite();
   const [isFavorite, setIsFavorite] = useState(product?.isFavorite || false);
 
   if (!product && !productLoading) {
@@ -55,10 +63,45 @@ const ProductDetail = () => {
     .filter((p) => p.category === product?.category && p.id !== product?.id)
     .slice(0, 4);
 
-  const handleAddToCart = () => {
-    toast.success("Added to cart!", {
-      description: `${product.title} has been added to your cart.`,
-    });
+  const handleAddToCart = async () => {
+    if (!isAuthenticated) {
+      toast.error("Login required", {
+        description: "Please login to add items to your cart.",
+      });
+      navigate("/login");
+      return;
+    }
+
+    try {
+      await addToCart.mutateAsync({ productId: product._id, quantity: 1 });
+      toast.success("Added to cart!", {
+        description: `${product.title} has been added to your cart.`,
+      });
+    } catch (error: any) {
+      toast.error("Failed to add to cart", {
+        description: error.message || "Please try again.",
+      });
+    }
+  };
+
+  const handleFavoriteToggle = async () => {
+    if (!isAuthenticated) {
+      toast.error("Login required", {
+        description: "Please login to save favorites.",
+      });
+      navigate("/login");
+      return;
+    }
+
+    try {
+      await toggleFavorite.mutateAsync({ productId: product._id, isFavorite });
+      setIsFavorite(!isFavorite);
+      toast.success(isFavorite ? "Removed from favorites" : "Added to favorites");
+    } catch (error: any) {
+      toast.error("Failed to update favorites", {
+        description: error.message || "Please try again.",
+      });
+    }
   };
 
   const handleContact = () => {
@@ -103,7 +146,8 @@ const ProductDetail = () => {
                   "absolute top-4 right-4 h-10 w-10 rounded-full bg-background/80 backdrop-blur-sm",
                   isFavorite && "text-primary"
                 )}
-                onClick={() => setIsFavorite(!isFavorite)}
+                onClick={handleFavoriteToggle}
+                disabled={toggleFavorite.isLoading}
               >
                 <Heart className={cn("h-5 w-5", isFavorite && "fill-current")} />
               </Button>
@@ -188,9 +232,14 @@ const ProductDetail = () => {
 
             {/* Actions */}
             <div className="flex flex-col sm:flex-row gap-3">
-              <Button size="lg" className="flex-1 gap-2" onClick={handleAddToCart}>
+              <Button 
+                size="lg" 
+                className="flex-1 gap-2" 
+                onClick={handleAddToCart}
+                disabled={addToCart.isPending}
+              >
                 <ShoppingCart className="h-5 w-5" />
-                Add to Cart
+                {addToCart.isPending ? "Adding..." : "Add to Cart"}
               </Button>
               <Button size="lg" variant="outline" className="flex-1 gap-2" onClick={handleContact}>
                 <MessageCircle className="h-5 w-5" />

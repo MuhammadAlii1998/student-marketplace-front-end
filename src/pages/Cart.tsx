@@ -1,41 +1,49 @@
 import { Link } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
-import { products } from "@/data/products";
 import { Minus, Plus, Trash2, ShoppingBag, ArrowLeft } from "lucide-react";
-import { useState } from "react";
 import { toast } from "sonner";
-
-interface CartItem {
-  productId: string;
-  quantity: number;
-}
+import { useCart, useUpdateCartItem, useRemoveFromCart, useClearCart } from "@/hooks/useCart";
+import { Product } from "@/hooks/useProducts";
 
 const Cart = () => {
-  const [cartItems, setCartItems] = useState<CartItem[]>([
-    { productId: "1", quantity: 1 },
-    { productId: "2", quantity: 1 },
-    { productId: "6", quantity: 2 },
-  ]);
+  const { data: cart, isLoading } = useCart();
+  const updateCartItem = useUpdateCartItem();
+  const removeFromCart = useRemoveFromCart();
+  const clearCart = useClearCart();
 
+  const cartItems = cart?.items || [];
+  
   const cartProducts = cartItems.map((item) => ({
     ...item,
-    product: products.find((p) => p.id === item.productId)!,
-  })).filter((item) => item.product);
+    product: typeof item.product === 'object' ? item.product : null,
+  })).filter((item) => item.product) as Array<{ product: Product; quantity: number }>;
 
-  const updateQuantity = (productId: string, delta: number) => {
-    setCartItems((prev) =>
-      prev.map((item) =>
-        item.productId === productId
-          ? { ...item, quantity: Math.max(1, item.quantity + delta) }
-          : item
-      )
-    );
+  const updateQuantity = async (productId: string, newQuantity: number) => {
+    if (newQuantity < 1) return;
+    try {
+      await updateCartItem.mutateAsync({ productId, quantity: newQuantity });
+    } catch (error: any) {
+      toast.error("Failed to update quantity", { description: error.message });
+    }
   };
 
-  const removeItem = (productId: string) => {
-    setCartItems((prev) => prev.filter((item) => item.productId !== productId));
-    toast.success("Item removed from cart");
+  const removeItem = async (productId: string) => {
+    try {
+      await removeFromCart.mutateAsync(productId);
+      toast.success("Item removed from cart");
+    } catch (error: any) {
+      toast.error("Failed to remove item", { description: error.message });
+    }
+  };
+
+  const handleClearCart = async () => {
+    try {
+      await clearCart.mutateAsync();
+      toast.success("Cart cleared");
+    } catch (error: any) {
+      toast.error("Failed to clear cart", { description: error.message });
+    }
   };
 
   const subtotal = cartProducts.reduce(
@@ -44,6 +52,16 @@ const Cart = () => {
   );
   const serviceFee = subtotal * 0.05;
   const total = subtotal + serviceFee;
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="container py-16">
+          <div className="text-center">Loading cart...</div>
+        </div>
+      </Layout>
+    );
+  }
 
   if (cartProducts.length === 0) {
     return (
@@ -131,7 +149,8 @@ const Cart = () => {
                       variant="outline"
                       size="icon"
                       className="h-8 w-8"
-                      onClick={() => updateQuantity(product.id, -1)}
+                      onClick={() => updateQuantity(product.id, quantity - 1)}
+                      disabled={updateCartItem.isPending}
                     >
                       <Minus className="h-3 w-3" />
                     </Button>
@@ -140,7 +159,8 @@ const Cart = () => {
                       variant="outline"
                       size="icon"
                       className="h-8 w-8"
-                      onClick={() => updateQuantity(product.id, 1)}
+                      onClick={() => updateQuantity(product.id, quantity + 1)}
+                      disabled={updateCartItem.isPending}
                     >
                       <Plus className="h-3 w-3" />
                     </Button>

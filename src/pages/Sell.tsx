@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { categories } from "@/data/products";
+import { useCategories } from "@/hooks/useCategories";
+import { useCreateProduct } from "@/hooks/useProducts";
+import { useIsAuthenticated } from "@/hooks/useAuth";
 import { Camera, Upload, X, Info, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 
@@ -18,14 +21,26 @@ const conditions = [
 ];
 
 const Sell = () => {
+  const navigate = useNavigate();
+  const { isAuthenticated } = useIsAuthenticated();
+  const { data: categories = [] } = useCategories();
+  const createProduct = useCreateProduct();
+
   const [images, setImages] = useState<string[]>([]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
   const [condition, setCondition] = useState("");
   const [price, setPrice] = useState("");
+  const [originalPrice, setOriginalPrice] = useState("");
   const [location, setLocation] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Check authentication and redirect if not logged in
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate("/login");
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -54,24 +69,37 @@ const Sell = () => {
       return;
     }
 
-    setIsSubmitting(true);
-    
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    
-    toast.success("Listing created successfully!", {
-      description: "Your item is now visible to other students.",
-    });
-    
-    // Reset form
-    setImages([]);
-    setTitle("");
-    setDescription("");
-    setCategory("");
-    setCondition("");
-    setPrice("");
-    setLocation("");
-    setIsSubmitting(false);
+    if (!price || parseFloat(price) <= 0) {
+      toast.error("Please enter a valid price");
+      return;
+    }
+
+    try {
+      const productData = {
+        title,
+        description,
+        price: parseFloat(price),
+        originalPrice: originalPrice ? parseFloat(originalPrice) : undefined,
+        category,
+        condition: condition as "new" | "like-new" | "good" | "fair",
+        location,
+        images: images, // In production, upload to storage service first
+        image: images[0], // Primary image
+      };
+
+      await createProduct.mutateAsync(productData);
+      
+      toast.success("Listing created successfully!", {
+        description: "Your item is now visible to other students.",
+      });
+      
+      // Navigate to products page or user's listings
+      setTimeout(() => navigate("/profile"), 1000);
+    } catch (error: any) {
+      toast.error("Failed to create listing", {
+        description: error.message || "Please try again.",
+      });
+    }
   };
 
   const isFormValid = images.length > 0 && title && description && category && condition && price && location;
@@ -166,7 +194,7 @@ const Sell = () => {
                 </SelectTrigger>
                 <SelectContent>
                   {categories.map((cat) => (
-                    <SelectItem key={cat.slug} value={cat.slug}>
+                    <SelectItem key={cat.slug} value={cat.name}>
                       {cat.name}
                     </SelectItem>
                   ))}
@@ -206,24 +234,51 @@ const Sell = () => {
           </div>
 
           {/* Price */}
-          <div className="space-y-2">
-            <Label htmlFor="price" className="text-base font-semibold">Price *</Label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-              <Input
-                id="price"
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="0.00"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                className="pl-8"
-              />
+          <div className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="price" className="text-base font-semibold">Selling Price *</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                  <Input
+                    id="price"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    className="pl-8"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="originalPrice" className="text-base font-semibold">
+                  Original Price (Optional)
+                </Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                  <Input
+                    id="originalPrice"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={originalPrice}
+                    onChange={(e) => setOriginalPrice(e.target.value)}
+                    className="pl-8"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Show buyers how much they're saving
+                </p>
+              </div>
             </div>
-            <div className="flex items-start gap-2 p-3 rounded-lg bg-secondary/50 text-sm">
+
+            <div className="flex gap-3 p-4 bg-muted/50 rounded-lg">
               <Info className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 Set a competitive price. Check similar listings to see what others are charging.
               </p>
             </div>
@@ -235,9 +290,9 @@ const Sell = () => {
               type="submit"
               size="lg"
               className="flex-1 gap-2"
-              disabled={!isFormValid || isSubmitting}
+              disabled={!isFormValid || createProduct.isPending}
             >
-              {isSubmitting ? (
+              {createProduct.isPending ? (
                 <>
                   <div className="h-4 w-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
                   Publishing...
@@ -249,8 +304,14 @@ const Sell = () => {
                 </>
               )}
             </Button>
-            <Button type="button" variant="outline" size="lg" className="sm:w-auto">
-              Save as Draft
+            <Button 
+              type="button" 
+              variant="outline" 
+              size="lg" 
+              className="sm:w-auto"
+              onClick={() => navigate("/profile")}
+            >
+              Cancel
             </Button>
           </div>
         </form>

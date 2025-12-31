@@ -1,8 +1,13 @@
-import { Link } from "react-router-dom";
-import { Heart, MapPin } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Heart, MapPin, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useAddToCart } from "@/hooks/useCart";
+import { useToggleFavorite } from "@/hooks/useFavorites";
+import { useIsAuthenticated } from "@/hooks/useAuth";
+import { toast } from "sonner";
+import { useState } from "react";
 
 interface ProductCardProps {
   id: string;
@@ -34,6 +39,57 @@ export function ProductCard({
   seller,
   isFavorite = false,
 }: ProductCardProps) {
+  const navigate = useNavigate();
+  const { isAuthenticated } = useIsAuthenticated();
+  const addToCart = useAddToCart();
+  const toggleFavorite = useToggleFavorite();
+  const [favorite, setFavorite] = useState(isFavorite);
+
+  const handleAddToCart = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    if (!isAuthenticated) {
+      toast.error("Login required", {
+        description: "Please login to add items to your cart.",
+      });
+      navigate("/login");
+      return;
+    }
+
+    try {
+      await addToCart.mutateAsync({ productId: id, quantity: 1 });
+      toast.success("Added to cart!", {
+        description: `${title} has been added to your cart.`,
+      });
+    } catch (error: any) {
+      toast.error("Failed to add to cart", {
+        description: error.message || "Please try again.",
+      });
+    }
+  };
+
+  const handleFavoriteToggle = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    if (!isAuthenticated) {
+      toast.error("Login required", {
+        description: "Please login to save favorites.",
+      });
+      navigate("/login");
+      return;
+    }
+
+    try {
+      await toggleFavorite.toggleFavorite(id, favorite);
+      setFavorite(!favorite);
+      toast.success(favorite ? "Removed from favorites" : "Added to favorites");
+    } catch (error: any) {
+      toast.error("Failed to update favorites", {
+        description: error.message || "Please try again.",
+      });
+    }
+  };
+
   return (
     <Link
       to={`/product/${id}`}
@@ -51,14 +107,12 @@ export function ProductCard({
           size="icon"
           className={cn(
             "absolute top-3 right-3 h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm",
-            isFavorite && "text-primary"
+            favorite && "text-primary"
           )}
-          onClick={(e) => {
-            e.preventDefault();
-            // Toggle favorite logic
-          }}
+          onClick={handleFavoriteToggle}
+          disabled={toggleFavorite.isLoading}
         >
-          <Heart className={cn("h-4 w-4", isFavorite && "fill-current")} />
+          <Heart className={cn("h-4 w-4", favorite && "fill-current")} />
         </Button>
         <Badge className={cn("absolute top-3 left-3", conditionColors[condition])}>
           {condition.charAt(0).toUpperCase() + condition.slice(1).replace("-", " ")}
@@ -94,6 +148,17 @@ export function ProductCard({
             Sold by <span className="font-medium text-foreground">{seller}</span>
           </p>
         )}
+
+        {/* Add to Cart Button */}
+        <Button
+          size="sm"
+          className="w-full mt-3 gap-2"
+          onClick={handleAddToCart}
+          disabled={addToCart.isPending}
+        >
+          <ShoppingCart className="h-4 w-4" />
+          {addToCart.isPending ? "Adding..." : "Add to Cart"}
+        </Button>
       </div>
     </Link>
   );

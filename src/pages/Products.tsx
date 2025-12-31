@@ -1,44 +1,37 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { ProductCard } from "@/components/ProductCard";
-import { /*products, categories*/ } from "@/data/products";
 import { useProducts, Product } from "@/hooks/useProducts";
+import { useCategories } from "@/hooks/useCategories";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Search, SlidersHorizontal, X } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const conditions = ["new", "like-new", "good", "fair"] as const;
 
 const Products = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedConditions, setSelectedConditions] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState("newest");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "price-asc" | "price-desc">("newest");
   const [showFilters, setShowFilters] = useState(false);
 
-  const { data: products = [], isLoading, isError } = useProducts();
+  // Fetch categories for filter dropdown
+  const { data: categories = [] } = useCategories();
 
-  const filteredProducts = (products as Product[]).filter((product) => {
-    const matchesSearch = product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === "all" || product.category.toLowerCase() === selectedCategory;
-    const matchesCondition = selectedConditions.length === 0 || selectedConditions.includes(product.condition);
-    return matchesSearch && matchesCategory && matchesCondition;
-  });
+  // Build filters object for API
+  const filters = useMemo(() => ({
+    search: searchQuery || undefined,
+    category: selectedCategory || undefined,
+    condition: selectedConditions.length > 0 ? selectedConditions.join(',') : undefined,
+    sort: sortBy,
+  }), [searchQuery, selectedCategory, selectedConditions, sortBy]);
 
-  const sortedProducts = [...filteredProducts].sort((a, b) => {
-    switch (sortBy) {
-      case "price-low":
-        return a.price - b.price;
-      case "price-high":
-        return b.price - a.price;
-      case "newest":
-      default:
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    }
-  });
+  // Fetch products with filters
+  const { data: products = [], isLoading, isError } = useProducts(filters);
 
   const toggleCondition = (condition: string) => {
     setSelectedConditions((prev) =>
@@ -50,12 +43,12 @@ const Products = () => {
 
   const clearFilters = () => {
     setSearchQuery("");
-    setSelectedCategory("all");
+    setSelectedCategory("");
     setSelectedConditions([]);
     setSortBy("newest");
   };
 
-  const hasActiveFilters = searchQuery || selectedCategory !== "all" || selectedConditions.length > 0;
+  const hasActiveFilters = searchQuery || selectedCategory || selectedConditions.length > 0;
 
   return (
     <Layout>
@@ -64,7 +57,7 @@ const Products = () => {
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold mb-2">Browse Products</h1>
           <p className="text-muted-foreground">
-            Discover {sortedProducts.length} items from your campus community
+            {isLoading ? "Loading products..." : `Discover ${products.length} items from your campus community`}
           </p>
         </div>
 
@@ -84,26 +77,30 @@ const Products = () => {
           <div className="flex gap-2">
             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
               <SelectTrigger className="w-40">
-                <SelectValue placeholder="Category" />
+                <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {Array.from(new Set(products.map((p) => p.category))).map((cat) => (
-                  <SelectItem key={cat} value={cat.toLowerCase()}>
-                    {cat}
+                <SelectItem value="">All Categories</SelectItem>
+                {categories.map((cat) => (
+                  <SelectItem key={cat.slug} value={cat.name}>
+                    {cat.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
 
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-36">
+            <Select 
+              value={sortBy} 
+              onValueChange={(value) => setSortBy(value as typeof sortBy)}
+            >
+              <SelectTrigger className="w-44">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="newest">Newest</SelectItem>
-                <SelectItem value="price-low">Price: Low to High</SelectItem>
-                <SelectItem value="price-high">Price: High to Low</SelectItem>
+                <SelectItem value="newest">Newest First</SelectItem>
+                <SelectItem value="oldest">Oldest First</SelectItem>
+                <SelectItem value="price-asc">Price: Low to High</SelectItem>
+                <SelectItem value="price-desc">Price: High to Low</SelectItem>
               </SelectContent>
             </Select>
 
@@ -227,7 +224,7 @@ const Products = () => {
                     Clear All
                   </Button>
                   <Button className="flex-1" onClick={() => setShowFilters(false)}>
-                    Show {sortedProducts.length} Results
+                    Show {products.length} Results
                   </Button>
                 </div>
               </div>
@@ -237,18 +234,28 @@ const Products = () => {
           {/* Products Grid */}
           <div className="flex-1">
             {isLoading ? (
-              <div className="text-center py-16">Loading products...</div>
-            ) : isError ? (
-              <div className="text-center py-16">Failed to load products.</div>
-            ) : sortedProducts.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {sortedProducts.map((product) => (
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="space-y-3">
+                    <Skeleton className="aspect-square rounded-xl" />
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                  </div>
+                ))}
+              </div>
+            ) : isError ? (
+              <div className="text-center py-16">
+                <p className="text-muted-foreground">Failed to load products. Please try again.</p>
+              </div>
+            ) : products.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {products.map((product) => (
                   <ProductCard
                     key={product.id}
                     id={product.id}
                     title={product.title}
                     price={product.price}
-                    image={product.image}
+                    image={product.image || product.images[0]}
                     category={product.category}
                     condition={product.condition}
                     location={product.location}

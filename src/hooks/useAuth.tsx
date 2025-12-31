@@ -7,6 +7,7 @@ export type User = {
   email: string;
   avatar?: string;
   university: string;
+  studentId?: string;
   rating: number;
   reviews: number;
   favorites: string[];
@@ -23,6 +24,7 @@ export type RegisterData = {
   email: string;
   password: string;
   university?: string;
+  studentId?: string;
 };
 
 export type AuthResponse = {

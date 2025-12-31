@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { products } from "@/data/products";
 import { ProductCard } from "@/components/ProductCard";
 import { 
   Settings, 
@@ -14,29 +13,54 @@ import {
   Heart, 
   Package,
   Edit,
+  GraduationCap,
   LogOut,
   Mail,
   Phone
 } from "lucide-react";
-
-const user = {
-  name: "Alex Johnson",
-  email: "alex.johnson@esilv.edu",
-  phone: "+33 6 12 34 56 78",
-  avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop",
-  university: "ESILV - École Supérieure d'Ingénieurs Léonard de Vinci",
-  location: "La Défense, Paris",
-  memberSince: "September 2023",
-  rating: 4.8,
-  reviews: 23,
-  totalSales: 15,
-  totalPurchases: 8,
-};
+import { useProfile, useLogout } from "@/hooks/useAuth";
+import { useMyListings } from "@/hooks/useProducts";
+import { useFavorites } from "@/hooks/useFavorites";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 const Profile = () => {
-  const myListings = products.filter((p) => p.seller.id === "s1");
-  const favorites = products.filter((p) => p.isFavorite);
-  const purchases = products.slice(0, 3);
+  const navigate = useNavigate();
+  const { data: user, isLoading: userLoading } = useProfile();
+  const { data: myListings = [], isLoading: listingsLoading } = useMyListings();
+  const { data: favorites = [], isLoading: favoritesLoading } = useFavorites();
+  const logoutMutation = useLogout();
+
+  const handleLogout = async () => {
+    try {
+      await logoutMutation.mutateAsync();
+      toast.success("Logged out successfully");
+      navigate("/login");
+    } catch (error: any) {
+      toast.error("Logout failed", { description: error.message });
+    }
+  };
+
+  if (userLoading) {
+    return (
+      <Layout>
+        <div className="container py-16 text-center">Loading profile...</div>
+      </Layout>
+    );
+  }
+
+  if (!user) {
+    return (
+      <Layout>
+        <div className="container py-16 text-center">
+          <p className="mb-4">Please log in to view your profile.</p>
+          <Button onClick={() => navigate("/login")}>Go to Login</Button>
+        </div>
+      </Layout>
+    );
+  }
+
+  const purchases: any[] = []; // Purchases endpoint not yet implemented
 
   return (
     <Layout>
@@ -67,11 +91,17 @@ const Profile = () => {
               <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <MapPin className="h-4 w-4" />
-                  {user.location}
+                  {user.university || "ESILV"}
                 </span>
+                {user.studentId && (
+                  <span className="flex items-center gap-1">
+                    <GraduationCap className="h-4 w-4" />
+                    Student ID: {user.studentId}
+                  </span>
+                )}
                 <span className="flex items-center gap-1">
                   <Calendar className="h-4 w-4" />
-                  Member since {user.memberSince}
+                  Member since {new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                 </span>
               </div>
             </div>
@@ -91,11 +121,11 @@ const Profile = () => {
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <div className="p-4 rounded-xl bg-card border border-border/50 text-center">
-            <p className="text-2xl font-bold text-primary">{user.totalSales}</p>
-            <p className="text-sm text-muted-foreground">Items Sold</p>
+            <p className="text-2xl font-bold text-primary">{myListings.length}</p>
+            <p className="text-sm text-muted-foreground">Items Listed</p>
           </div>
           <div className="p-4 rounded-xl bg-card border border-border/50 text-center">
-            <p className="text-2xl font-bold text-primary">{user.totalPurchases}</p>
+            <p className="text-2xl font-bold text-primary">{purchases.length}</p>
             <p className="text-sm text-muted-foreground">Purchases</p>
           </div>
           <div className="p-4 rounded-xl bg-card border border-border/50 text-center">
@@ -228,7 +258,7 @@ const Profile = () => {
                     <Phone className="h-5 w-5 text-muted-foreground" />
                     <div>
                       <p className="text-sm text-muted-foreground">Phone</p>
-                      <p>{user.phone}</p>
+                      <p>Not provided</p>
                     </div>
                   </div>
                 </div>
@@ -241,9 +271,14 @@ const Profile = () => {
                     <Edit className="h-4 w-4" />
                     Edit Profile
                   </Button>
-                  <Button variant="outline" className="w-full justify-start gap-2 text-destructive hover:text-destructive">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start gap-2 text-destructive hover:text-destructive"
+                    onClick={handleLogout}
+                    disabled={logoutMutation.isPending}
+                  >
                     <LogOut className="h-4 w-4" />
-                    Sign Out
+                    {logoutMutation.isPending ? "Signing out..." : "Sign Out"}
                   </Button>
                 </div>
               </div>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,25 +9,88 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Mail, Lock, User, GraduationCap, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import esilvLogo from "@/assets/esilv-logo.png";
+import { useLogin, useRegister } from "@/hooks/useAuth";
 
 const Login = () => {
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [registerName, setRegisterName] = useState("");
+  const [registerEmail, setRegisterEmail] = useState("");
+  const [registerPassword, setRegisterPassword] = useState("");
+  const [studentId, setStudentId] = useState("");
+  
+  const loginMutation = useLogin();
+  const registerMutation = useRegister();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    toast.success("Login successful!", { description: "Welcome back to ESILV Marketplace." });
-    setIsLoading(false);
+    try {
+      await loginMutation.mutateAsync({
+        email: loginEmail,
+        password: loginPassword,
+      });
+      toast.success("Login successful!", { description: "Welcome back to ESILV Marketplace." });
+      navigate("/");
+    } catch (error: any) {
+      toast.error("Login failed", { 
+        description: error.message || "Invalid email or password." 
+      });
+    }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    toast.success("Registration submitted!", { description: "Please check your email for verification." });
-    setIsLoading(false);
+    
+    // Basic validation
+    if (registerName.trim().length < 2) {
+      toast.error("Invalid name", { description: "Name must be at least 2 characters long." });
+      return;
+    }
+    
+    // ESILV email validation
+    if (!registerEmail.endsWith("@edu.devinci.fr") && !registerEmail.endsWith("@devinci.fr")) {
+      toast.error("Invalid email domain", { 
+        description: "Please use your ESILV email (@edu.devinci.fr or @devinci.fr)" 
+      });
+      return;
+    }
+    
+    // Student ID validation (7-digit badge number format)
+    if (!/^\d{7}$/.test(studentId)) {
+      toast.error("Invalid student ID", { 
+        description: "Student ID must be exactly 7 digits (e.g., 727700)" 
+      });
+      return;
+    }
+    
+    if (registerPassword.length < 6) {
+      toast.error("Weak password", { description: "Password must be at least 6 characters long." });
+      return;
+    }
+    
+    try {
+      const result = await registerMutation.mutateAsync({
+        name: registerName,
+        email: registerEmail,
+        password: registerPassword,
+        university: "ESILV",
+        studentId: studentId,
+      });
+      
+      toast.success("Registration successful!", { 
+        description: `Welcome ${registerName}! Your account has been created.` 
+      });
+      
+      // Navigate to home page after successful registration
+      setTimeout(() => navigate("/"), 500);
+    } catch (error: any) {
+      console.error("Registration error:", error);
+      toast.error("Registration failed", { 
+        description: error.message || "This email may already be registered. Please try logging in instead." 
+      });
+    }
   };
 
   return (
@@ -63,6 +126,8 @@ const Login = () => {
                         type="email"
                         placeholder="your.name@edu.devinci.fr"
                         className="pl-10"
+                        value={loginEmail}
+                        onChange={(e) => setLoginEmail(e.target.value)}
                         required
                       />
                     </div>
@@ -77,6 +142,8 @@ const Login = () => {
                         type={showPassword ? "text" : "password"}
                         placeholder="••••••••"
                         className="pl-10 pr-10"
+                        value={loginPassword}
+                        onChange={(e) => setLoginPassword(e.target.value)}
                         required
                       />
                       <button
@@ -101,8 +168,8 @@ const Login = () => {
                     </Link>
                   </div>
 
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? "Signing in..." : "Sign In"}
+                  <Button type="submit" className="w-full" disabled={loginMutation.isPending}>
+                    {loginMutation.isPending ? "Signing in..." : "Sign In"}
                   </Button>
                 </form>
               </TabsContent>
@@ -119,6 +186,8 @@ const Login = () => {
                         type="text"
                         placeholder="John Doe"
                         className="pl-10"
+                        value={registerName}
+                        onChange={(e) => setRegisterName(e.target.value)}
                         required
                       />
                     </div>
@@ -133,6 +202,8 @@ const Login = () => {
                         type="email"
                         placeholder="your.name@edu.devinci.fr"
                         className="pl-10"
+                        value={registerEmail}
+                        onChange={(e) => setRegisterEmail(e.target.value)}
                         required
                       />
                     </div>
@@ -142,17 +213,23 @@ const Login = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="register-student-id">Student ID</Label>
+                    <Label htmlFor="register-student-id">Student ID (Badge Number)</Label>
                     <div className="relative">
                       <GraduationCap className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="register-student-id"
                         type="text"
-                        placeholder="e.g., A2024-12345"
+                        placeholder="7277000"
                         className="pl-10"
+                        value={studentId}
+                        onChange={(e) => setStudentId(e.target.value)}
+                        maxLength={7}
                         required
                       />
                     </div>
+                    <p className="text-xs text-muted-foreground">
+                      Enter your 7-digit badge number from your student ID card
+                    </p>
                   </div>
 
                   <div className="space-y-2">
@@ -164,6 +241,8 @@ const Login = () => {
                         type={showPassword ? "text" : "password"}
                         placeholder="Create a secure password"
                         className="pl-10 pr-10"
+                        value={registerPassword}
+                        onChange={(e) => setRegisterPassword(e.target.value)}
                         required
                       />
                       <button
@@ -183,8 +262,8 @@ const Login = () => {
                     </label>
                   </div>
 
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? "Creating account..." : "Create Account"}
+                  <Button type="submit" className="w-full" disabled={registerMutation.isPending}>
+                    {registerMutation.isPending ? "Creating account..." : "Create Account"}
                   </Button>
                 </form>
               </TabsContent>

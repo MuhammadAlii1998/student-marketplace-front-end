@@ -41,8 +41,8 @@ export const useProducts = (filters?: ProductFilters) => {
   return useQuery<Product[]>({
     queryKey: ["products", filters],
     queryFn: async () => {
-      const data = await api.get<Product[]>('/products', filters);
-      return data;
+      const response = await api.get<{ products: Product[] }>('/products', filters);
+      return response.products || [];
     },
     staleTime: 1000 * 60, // 1 minute
   });
@@ -66,7 +66,7 @@ export const useProductsByCategory = (category?: string) => {
     queryFn: async () => {
       if (!category) return [];
       const data = await api.get<Product[]>(`/products/category/${category}`);
-      return data;
+      return data || [];
     },
     enabled: !!category,
   });
@@ -78,7 +78,7 @@ export const useSellerProducts = (sellerId?: string) => {
     queryFn: async () => {
       if (!sellerId) return [];
       const data = await api.get<Product[]>(`/products/seller/${sellerId}`);
-      return data;
+      return data || [];
     },
     enabled: !!sellerId,
   });
@@ -89,7 +89,7 @@ export const useMyListings = () => {
     queryKey: ["products", "my-listings"],
     queryFn: async () => {
       const data = await api.get<Product[]>('/products/my/listings');
-      return data;
+      return data || [];
     },
   });
 };
