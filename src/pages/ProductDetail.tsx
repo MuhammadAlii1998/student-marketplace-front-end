@@ -40,10 +40,21 @@ const ProductDetail = () => {
   
   const { isAuthenticated } = useIsAuthenticated();
   const addToCart = useAddToCart();
-  const toggleFavorite = useToggleFavorite();
+  const { toggleFavorite, isLoading: favoriteLoading } = useToggleFavorite();
   const [isFavorite, setIsFavorite] = useState(product?.isFavorite || false);
 
-  if (!product && !productLoading) {
+  // Show loading state
+  if (productLoading) {
+    return (
+      <Layout>
+        <div className="container py-16 text-center">
+          <p className="text-muted-foreground">Loading product...</p>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!product) {
     return (
       <Layout>
         <div className="container py-16 text-center">
@@ -73,7 +84,7 @@ const ProductDetail = () => {
     }
 
     try {
-      await addToCart.mutateAsync({ productId: product._id, quantity: 1 });
+      await addToCart.mutateAsync({ productId: product.id, quantity: 1 });
       toast.success("Added to cart!", {
         description: `${product.title} has been added to your cart.`,
       });
@@ -94,7 +105,7 @@ const ProductDetail = () => {
     }
 
     try {
-      await toggleFavorite.mutateAsync({ productId: product._id, isFavorite });
+      await toggleFavorite(product.id, isFavorite);
       setIsFavorite(!isFavorite);
       toast.success(isFavorite ? "Removed from favorites" : "Added to favorites");
     } catch (error: any) {
@@ -147,7 +158,7 @@ const ProductDetail = () => {
                   isFavorite && "text-primary"
                 )}
                 onClick={handleFavoriteToggle}
-                disabled={toggleFavorite.isLoading}
+                disabled={favoriteLoading}
               >
                 <Heart className={cn("h-5 w-5", isFavorite && "fill-current")} />
               </Button>

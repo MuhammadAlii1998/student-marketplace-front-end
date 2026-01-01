@@ -14,7 +14,7 @@ const conditions = ["new", "like-new", "good", "fair"] as const;
 
 const Products = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedConditions, setSelectedConditions] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "price-asc" | "price-desc">("newest");
   const [showFilters, setShowFilters] = useState(false);
@@ -25,7 +25,7 @@ const Products = () => {
   // Build filters object for API
   const filters = useMemo(() => ({
     search: searchQuery || undefined,
-    category: selectedCategory || undefined,
+    category: selectedCategory && selectedCategory !== 'all' ? selectedCategory : undefined,
     condition: selectedConditions.length > 0 ? selectedConditions.join(',') : undefined,
     sort: sortBy,
   }), [searchQuery, selectedCategory, selectedConditions, sortBy]);
@@ -43,12 +43,12 @@ const Products = () => {
 
   const clearFilters = () => {
     setSearchQuery("");
-    setSelectedCategory("");
+    setSelectedCategory("all");
     setSelectedConditions([]);
     setSortBy("newest");
   };
 
-  const hasActiveFilters = searchQuery || selectedCategory || selectedConditions.length > 0;
+  const hasActiveFilters = searchQuery || (selectedCategory && selectedCategory !== 'all') || selectedConditions.length > 0;
 
   return (
     <Layout>
@@ -80,7 +80,7 @@ const Products = () => {
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Categories</SelectItem>
+                <SelectItem value="all">All Categories</SelectItem>
                 {categories.map((cat) => (
                   <SelectItem key={cat.slug} value={cat.name}>
                     {cat.name}
