@@ -17,14 +17,29 @@ import NotFound from './pages/NotFound';
 import VerificationPending from './pages/VerificationPending';
 import VerifyEmail from './pages/VerifyEmail';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false, // Don't refetch on window focus
+      refetchOnMount: false, // Don't refetch on component mount
+      refetchOnReconnect: false, // Don't refetch on reconnect
+      retry: false, // Don't retry failed requests
+      staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      <BrowserRouter
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/products" element={<Products />} />

@@ -10,7 +10,7 @@ import {
   Heart,
   ExternalLink
 } from "lucide-react";
-import esilvLogo from "@/assets/esilv-logo.png";
+import esilvLogo from "@/assets/esilv-marketplace-logo.png";
 
 const values = [
   {

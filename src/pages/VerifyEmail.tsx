@@ -4,7 +4,7 @@ import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
-import esilvLogo from '@/assets/esilv-logo.png';
+import esilvLogo from '@/assets/esilv-marketplace-logo.png';
 import api from '@/lib/api';
 import { setAuthToken } from '@/hooks/useAuth';
 

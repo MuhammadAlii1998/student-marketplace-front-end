@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Mail, CheckCircle2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import esilvLogo from '@/assets/esilv-logo.png';
+import esilvLogo from '@/assets/esilv-marketplace-logo.png';
 import api from '@/lib/api';
 
 const VerificationPending = () => {

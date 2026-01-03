@@ -1,25 +1,25 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ShoppingCart, Search, Menu, X, User, Plus, LogIn, LogOut } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useState } from "react";
-import { cn } from "@/lib/utils";
-import { useIsAuthenticated, useLogout } from "@/hooks/useAuth";
-import { toast } from "sonner";
-import esilvLogo from "@/assets/esilv-logo.png";
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { ShoppingCart, Search, Menu, X, User, Plus, LogIn, LogOut } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useState } from 'react';
+import { cn } from '@/lib/utils';
+import { useIsAuthenticated, useLogout } from '@/hooks/useAuth';
+import { toast } from 'sonner';
+import esilvLogo from '@/assets/esilv-marketplace-logo.png';
 
 const navLinks = [
-  { href: "/", label: "Home" },
-  { href: "/products", label: "Browse" },
-  { href: "/category/books", label: "Books" },
-  { href: "/category/electronics", label: "Electronics" },
-  { href: "/category/furniture", label: "Furniture" },
-  { href: "/about", label: "About" },
+  { href: '/', label: 'Home' },
+  { href: '/products', label: 'Browse' },
+  { href: '/category/books', label: 'Books' },
+  { href: '/category/electronics', label: 'Electronics' },
+  { href: '/category/furniture', label: 'Furniture' },
+  { href: '/about', label: 'About' },
 ];
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated } = useIsAuthenticated();
@@ -29,17 +29,17 @@ export function Header() {
     e.preventDefault();
     if (searchQuery.trim()) {
       navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
-      setSearchQuery("");
+      setSearchQuery('');
     }
   };
 
   const handleLogout = async () => {
     try {
       await logout.mutateAsync();
-      toast.success("Logged out successfully");
-      navigate("/");
+      toast.success('Logged out successfully');
+      navigate('/');
     } catch (error) {
-      toast.error("Failed to logout");
+      toast.error('Failed to logout');
     }
   };
 
@@ -49,9 +49,6 @@ export function Header() {
         {/* Logo */}
         <Link to="/" className="flex items-center gap-3 font-heading font-bold text-xl">
           <img src={esilvLogo} alt="ESILV" className="h-10 w-auto" />
-          <span className="hidden sm:inline-block text-primary font-heading">
-            Marketplace
-          </span>
         </Link>
 
         {/* Desktop Navigation */}
@@ -61,10 +58,8 @@ export function Header() {
               key={link.href}
               to={link.href}
               className={cn(
-                "text-sm font-medium transition-colors hover:text-primary",
-                location.pathname === link.href
-                  ? "text-primary"
-                  : "text-muted-foreground"
+                'text-sm font-medium transition-colors hover:text-primary',
+                location.pathname === link.href ? 'text-primary' : 'text-muted-foreground'
               )}
             >
               {link.label}
@@ -94,7 +89,7 @@ export function Header() {
               Sell
             </Button>
           </Link>
-          
+
           <Link to="/cart">
             <Button variant="ghost" size="icon" className="relative">
               <ShoppingCart className="h-5 w-5" />
@@ -103,7 +98,7 @@ export function Header() {
               </span>
             </Button>
           </Link>
-          
+
           <Link to="/profile">
             <Button variant="ghost" size="icon">
               <User className="h-5 w-5" />
@@ -111,15 +106,15 @@ export function Header() {
           </Link>
 
           {isAuthenticated ? (
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               className="hidden sm:flex gap-2"
               onClick={handleLogout}
               disabled={logout.isPending}
             >
               <LogOut className="h-4 w-4" />
-              {logout.isPending ? "Logging out..." : "Logout"}
+              {logout.isPending ? 'Logging out...' : 'Logout'}
             </Button>
           ) : (
             <Link to="/login" className="hidden sm:block">
@@ -161,10 +156,10 @@ export function Header() {
                 key={link.href}
                 to={link.href}
                 className={cn(
-                  "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+                  'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
                   location.pathname === link.href
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-secondary"
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-muted-foreground hover:bg-secondary'
                 )}
                 onClick={() => setIsMenuOpen(false)}
               >
@@ -172,8 +167,8 @@ export function Header() {
               </Link>
             ))}
             {isAuthenticated ? (
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="w-full mt-2 gap-2"
                 onClick={() => {
                   handleLogout();
@@ -182,7 +177,7 @@ export function Header() {
                 disabled={logout.isPending}
               >
                 <LogOut className="h-4 w-4" />
-                {logout.isPending ? "Logging out..." : "Logout"}
+                {logout.isPending ? 'Logging out...' : 'Logout'}
               </Button>
             ) : (
               <Link to="/login" onClick={() => setIsMenuOpen(false)}>

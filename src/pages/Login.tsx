@@ -8,7 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Mail, Lock, User, GraduationCap, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
-import esilvLogo from '@/assets/esilv-logo.png';
+import esilvLogo from '@/assets/esilv-marketplace-logo.png';
 import { useLogin, useRegister } from '@/hooks/useAuth';
 
 const Login = () => {
@@ -26,70 +26,80 @@ const Login = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Basic client-side validation
+    if (!loginEmail || !loginPassword) {
+      toast.error('Please enter both email and password');
+      return;
+    }
+
     try {
       await loginMutation.mutateAsync({
         email: loginEmail,
         password: loginPassword,
       });
-      toast.success('Login successful!', {
-        description: 'Welcome back to ESILV Marketplace.',
-      });
+      toast.success('Login successful! Welcome back to ESILV Marketplace.');
       navigate('/');
     } catch (error: unknown) {
-      const err = error as { message?: string; response?: unknown };
-      // Check if error is due to unverified email
-      if (err.message && err.message.includes('verify your email')) {
-        toast.error('Email not verified', {
-          description: 'Please verify your email first',
-        });
-        // Redirect to verification pending page
-        navigate(`/verification-pending?email=${encodeURIComponent(loginEmail)}`);
-      } else {
-        toast.error('Login failed', {
-          description: err.message || 'Invalid email or password.',
-        });
+      const err = error as { message?: string; status?: number; isNetworkError?: boolean };
+      console.error('Login error:', err);
+
+      // Check if email verification is required
+      if (err.message && err.message.toLowerCase().includes('verif')) {
+        toast.error(err.message || 'Please verify your email before logging in');
+        setTimeout(() => {
+          navigate(`/verification-pending?email=${encodeURIComponent(loginEmail)}`);
+        }, 2000);
+        return;
       }
+
+      // Network error
+      if (err.isNetworkError || !err.status) {
+        toast.error('Unable to connect to server. Please check your internet connection.');
+        return;
+      }
+
+      // Backend already sends specific error messages
+      const message = err.message || 'Login failed. Please try again.';
+      toast.error(message);
     }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Basic validation
+    // Basic client-side validation
+    if (!registerName || !registerEmail || !registerPassword || !studentId) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
     if (registerName.trim().length < 2) {
-      toast.error('Invalid name', {
-        description: 'Name must be at least 2 characters long.',
-      });
+      toast.error('Name must be at least 2 characters long');
       return;
     }
 
     // ESILV email validation
     if (!registerEmail.endsWith('@edu.devinci.fr') && !registerEmail.endsWith('@devinci.fr')) {
-      toast.error('Invalid email domain', {
-        description: 'Please use your ESILV email (@edu.devinci.fr or @devinci.fr)',
-      });
+      toast.error('Please use your ESILV email (@edu.devinci.fr or @devinci.fr)');
       return;
     }
 
     // Student ID validation (7-digit badge number format)
     if (!/^\d{7}$/.test(studentId)) {
-      toast.error('Invalid student ID', {
-        description: 'Student ID must be exactly 7 digits (e.g., 727700)',
-      });
+      toast.error('Student ID must be exactly 7 digits (e.g., 7277000)');
       return;
     }
 
     if (registerPassword.length < 6) {
-      toast.error('Weak password', {
-        description: 'Password must be at least 6 characters long.',
-      });
+      toast.error('Password must be at least 6 characters long');
       return;
     }
 
     try {
       const result = await registerMutation.mutateAsync({
-        name: registerName,
-        email: registerEmail,
+        name: registerName.trim(),
+        email: registerEmail.toLowerCase().trim(),
         password: registerPassword,
         university: 'ESILV',
         studentId: studentId,
@@ -97,25 +107,25 @@ const Login = () => {
 
       // Check if email verification is required
       if (result.verificationRequired) {
-        toast.success('Registration successful!', {
-          description: 'Please check your email to verify your account',
-        });
-        // Redirect to verification-pending page with email
+        toast.success('Registration successful! Check your email to verify your account.');
         navigate(`/verification-pending?email=${encodeURIComponent(registerEmail)}`);
       } else {
-        toast.success('Registration successful!', {
-          description: `Welcome ${registerName}! Your account has been created.`,
-        });
-        // Navigate to home page after successful registration
+        toast.success(`Welcome ${registerName}! Your account has been created.`);
         setTimeout(() => navigate('/'), 500);
       }
     } catch (error: unknown) {
-      const err = error as { message?: string };
+      const err = error as { message?: string; status?: number; isNetworkError?: boolean };
       console.error('Registration error:', err);
-      toast.error('Registration failed', {
-        description:
-          err.message || 'This email may already be registered. Please try logging in instead.',
-      });
+
+      // Network error
+      if (err.isNetworkError || !err.status) {
+        toast.error('Unable to connect to server. Please check your internet connection.');
+        return;
+      }
+
+      // Backend already sends specific error messages
+      const message = err.message || 'Registration failed. Please try again.';
+      toast.error(message); // Will show "Student ID already registered", "Email already exists", etc.
     }
   };
 

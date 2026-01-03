@@ -50,14 +50,27 @@ export const clearAuthToken = () => {
 
 // Hook to get current user profile
 export const useProfile = () => {
+  const token = getAuthToken();
   return useQuery<User>({
     queryKey: ['profile'],
     queryFn: async () => {
-      const data = await api.get<User>('/auth/profile');
-      return data;
+      try {
+        const data = await api.get<User>('/auth/profile');
+        return data;
+      } catch (error: unknown) {
+        // If 401, clear the invalid token
+        if (error && typeof error === 'object' && 'status' in error && error.status === 401) {
+          clearAuthToken();
+        }
+        throw error;
+      }
     },
-    enabled: !!getAuthToken(), // Only fetch if token exists
+    enabled: !!token, // Only fetch if token exists
     retry: false, // Don't retry on auth failure
+    staleTime: 5 * 60 * 1000, // Data stays fresh for 5 minutes
+    refetchOnWindowFocus: false, // Don't refetch when window regains focus
+    refetchOnMount: false, // Don't refetch on component mount if data exists
+    refetchOnReconnect: false, // Don't refetch on reconnect
   });
 };
 

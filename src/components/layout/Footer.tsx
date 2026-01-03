@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Facebook, Twitter, Instagram, Linkedin, Youtube } from "lucide-react";
-import esilvLogo from "@/assets/esilv-logo.png";
+import esilvLogo from "@/assets/esilv-marketplace-logo.png";
 
 export function Footer() {
   return (
