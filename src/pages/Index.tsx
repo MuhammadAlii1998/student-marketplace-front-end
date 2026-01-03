@@ -66,7 +66,7 @@ const Index = () => {
 
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-heading font-extrabold tracking-tight mb-6">
               Buy, Sell & Exchange
-              <span className="block text-gradient">Within ESILV Community</span>
+              <span className="block text-gradient lg:pb-2 lg:pt-4">Within ESILV Community</span>
             </h1>
 
             <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">

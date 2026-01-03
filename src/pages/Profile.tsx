@@ -112,7 +112,7 @@ const Profile = () => {
               </div>
             </div>
 
-            <div className="flex gap-2 md:pt-12">
+            {/* <div className="flex gap-2 md:pt-12">
               <Button variant="outline" size="sm" className="gap-2">
                 <Edit className="h-4 w-4" />
                 Edit Profile
@@ -120,7 +120,7 @@ const Profile = () => {
               <Button variant="ghost" size="icon">
                 <Settings className="h-4 w-4" />
               </Button>
-            </div>
+            </div> */}
           </div>
         </div>
 
