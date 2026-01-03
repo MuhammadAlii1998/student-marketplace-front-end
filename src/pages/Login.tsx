@@ -85,9 +85,9 @@ const Login = () => {
       return;
     }
 
-    // Student ID validation (7-digit badge number format)
-    if (!/^\d{7}$/.test(studentId)) {
-      toast.error('Student ID must be exactly 7 digits (e.g., 7277000)');
+    // Student ID validation (6-digit badge number format)
+    if (!/^\d{6}$/.test(studentId)) {
+      toast.error('Student ID must be exactly 6 digits (e.g., 727700)');
       return;
     }
 
@@ -262,16 +262,16 @@ const Login = () => {
                       <Input
                         id="register-student-id"
                         type="text"
-                        placeholder="7277000"
+                        placeholder="727700"
                         className="pl-10"
                         value={studentId}
                         onChange={(e) => setStudentId(e.target.value)}
-                        maxLength={7}
+                        maxLength={6}
                         required
                       />
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Enter your 7-digit badge number from your student ID card
+                      Enter your 6-digit badge number from your student ID card
                     </p>
                   </div>
 
