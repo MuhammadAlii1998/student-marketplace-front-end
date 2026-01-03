@@ -1,6 +1,6 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
-import /*getProductById, products*/ '@/data/products';
+import { getProductById } from '@/data/products';
 import { useProduct, useProducts } from '@/hooks/useProducts';
 import { useAddToCart } from '@/hooks/useCart';
 import { useToggleFavorite } from '@/hooks/useFavorites';
@@ -43,6 +43,10 @@ const ProductDetail = () => {
   const { toggleFavorite, isLoading: favoriteLoading } = useToggleFavorite();
   const [isFavorite, setIsFavorite] = useState(product?.isFavorite || false);
 
+  // If backend product is missing (e.g., API down), fall back to local seed data
+  const fallbackProduct = !product && id ? getProductById(id) : undefined;
+  const effectiveProduct = product || fallbackProduct;
+
   // Show loading state
   if (productLoading) {
     return (
@@ -53,8 +57,7 @@ const ProductDetail = () => {
       </Layout>
     );
   }
-
-  if (!product) {
+  if (!effectiveProduct) {
     return (
       <Layout>
         <div className="container py-16 text-center">
@@ -71,7 +74,7 @@ const ProductDetail = () => {
   }
 
   const relatedProducts = (products || [])
-    .filter((p) => p.category === product?.category && p.id !== product?.id)
+    .filter((p) => p.category === effectiveProduct?.category && p.id !== effectiveProduct?.id)
     .slice(0, 4);
 
   const handleAddToCart = async () => {
@@ -84,9 +87,9 @@ const ProductDetail = () => {
     }
 
     try {
-      await addToCart.mutateAsync({ productId: product.id, quantity: 1 });
+      await addToCart.mutateAsync({ productId: effectiveProduct.id, quantity: 1 });
       toast.success('Added to cart!', {
-        description: `${product.title} has been added to your cart.`,
+        description: `${effectiveProduct.title} has been added to your cart.`,
       });
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Please try again.';
@@ -106,7 +109,7 @@ const ProductDetail = () => {
     }
 
     try {
-      await toggleFavorite(product.id, isFavorite);
+      await toggleFavorite(effectiveProduct.id, isFavorite);
       setIsFavorite(!isFavorite);
       toast.success(isFavorite ? 'Removed from favorites' : 'Added to favorites');
     } catch (error: unknown) {
@@ -119,12 +122,12 @@ const ProductDetail = () => {
 
   const handleContact = () => {
     toast.success('Message sent!', {
-      description: `Your message has been sent to ${product.seller?.name || 'the seller'}.`,
+      description: `Your message has been sent to ${effectiveProduct.seller?.name || 'the seller'}.`,
     });
   };
 
-  const savings = product.originalPrice
-    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+  const savings = effectiveProduct.originalPrice
+    ? Math.round(((effectiveProduct.originalPrice - effectiveProduct.price) / effectiveProduct.originalPrice) * 100)
     : 0;
 
   return (
@@ -140,20 +143,20 @@ const ProductDetail = () => {
             Products
           </Link>
           <span>/</span>
-          <Link to={`/category/${product.category.toLowerCase()}`} className="hover:text-primary">
-            {product.category}
+          <Link to={`/category/${effectiveProduct.category.toLowerCase()}`} className="hover:text-primary">
+            {effectiveProduct.category}
           </Link>
           <span>/</span>
-          <span className="text-foreground truncate max-w-[200px]">{product.title}</span>
+          <span className="text-foreground truncate max-w-[200px]">{effectiveProduct.title}</span>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
           {/* Image Gallery */}
           <div className="space-y-4">
-            <div className="relative aspect-square rounded-xl overflow-hidden bg-secondary">
+              <div className="relative aspect-square rounded-xl overflow-hidden bg-secondary">
               <img
-                src={product.images[selectedImageIndex] || product.image}
-                alt={product.title}
+                src={effectiveProduct.images[selectedImageIndex] || effectiveProduct.image}
+                alt={effectiveProduct.title}
                 className="h-full w-full object-cover"
               />
               <Button
@@ -168,15 +171,15 @@ const ProductDetail = () => {
               >
                 <Heart className={cn('h-5 w-5', isFavorite && 'fill-current')} />
               </Button>
-              <Badge className={cn('absolute top-4 left-4', conditionColors[product.condition])}>
-                {product.condition.charAt(0).toUpperCase() +
-                  product.condition.slice(1).replace('-', ' ')}
+              <Badge className={cn('absolute top-4 left-4', conditionColors[effectiveProduct.condition])}>
+                {effectiveProduct.condition.charAt(0).toUpperCase() +
+                  effectiveProduct.condition.slice(1).replace('-', ' ')}
               </Badge>
             </div>
 
-            {product.images.length > 1 && (
+            {effectiveProduct.images.length > 1 && (
               <div className="flex gap-2 overflow-x-auto pb-2">
-                {product.images.map((img, idx) => (
+                {effectiveProduct.images.map((img, idx) => (
                   <button
                     key={idx}
                     onClick={() => setSelectedImageIndex(idx)}
@@ -198,23 +201,24 @@ const ProductDetail = () => {
           <div className="space-y-6">
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <Badge variant="secondary">{product.category}</Badge>
+                <Badge variant="secondary">{effectiveProduct.category}</Badge>
                 <span className="flex items-center gap-1 text-sm text-muted-foreground">
                   <MapPin className="h-3.5 w-3.5" />
-                  {product.location}
+                  {effectiveProduct.location}
                 </span>
               </div>
 
-              <h1 className="text-2xl md:text-3xl font-bold mb-4">{product.title}</h1>
+              <h1 className="text-2xl md:text-3xl font-bold mb-1">{effectiveProduct.title}</h1>
+              <p className="text-sm text-muted-foreground mb-3">{effectiveProduct.description.slice(0, 120)}{effectiveProduct.description.length > 120 ? '...' : ''}</p>
 
               <div className="flex items-baseline gap-3 mb-4">
                 <span className="text-3xl md:text-4xl font-bold text-primary">
-                  ${product.price.toFixed(2)}
+                  ${effectiveProduct.price.toFixed(2)}
                 </span>
-                {product.originalPrice && (
+                {effectiveProduct.originalPrice && (
                   <>
                     <span className="text-lg text-muted-foreground line-through">
-                      ${product.originalPrice.toFixed(2)}
+                      ${effectiveProduct.originalPrice?.toFixed(2)}
                     </span>
                     <Badge className="bg-success text-success-foreground">Save {savings}%</Badge>
                   </>
@@ -227,31 +231,31 @@ const ProductDetail = () => {
               <div className="flex items-center gap-4">
                 <Avatar className="h-12 w-12">
                   <AvatarImage
-                    src={product.seller?.avatar}
-                    alt={product.seller?.name || 'Seller'}
-                  />
-                  <AvatarFallback>{product.seller?.name?.charAt(0) || 'S'}</AvatarFallback>
+                      src={effectiveProduct.seller?.avatar}
+                      alt={effectiveProduct.seller?.name || 'Seller'}
+                    />
+                    <AvatarFallback>{effectiveProduct.seller?.name?.charAt(0) || 'S'}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
-                  <p className="font-semibold">{product.seller?.name || 'Unknown Seller'}</p>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    {product.seller?.rating && (
-                      <>
-                        <span className="flex items-center gap-1">
-                          <Star className="h-3.5 w-3.5 fill-warning text-warning" />
-                          {product.seller.rating}
-                        </span>
-                        <span>•</span>
-                      </>
-                    )}
-                    {product.seller?.reviews && (
-                      <>
-                        <span>{product.seller.reviews} reviews</span>
-                        <span>•</span>
-                      </>
-                    )}
-                    {product.seller?.university && <span>{product.seller.university}</span>}
-                  </div>
+                    <p className="font-semibold">{effectiveProduct.seller?.name || 'Unknown Seller'}</p>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      {effectiveProduct.seller?.rating && (
+                        <>
+                          <span className="flex items-center gap-1">
+                            <Star className="h-3.5 w-3.5 fill-warning text-warning" />
+                            {effectiveProduct.seller.rating}
+                          </span>
+                          <span>•</span>
+                        </>
+                      )}
+                      {effectiveProduct.seller?.reviews && (
+                        <>
+                          <span>{effectiveProduct.seller.reviews} reviews</span>
+                          <span>•</span>
+                        </>
+                      )}
+                      {effectiveProduct.seller?.university && <span>{effectiveProduct.seller.university}</span>}
+                    </div>
                 </div>
                 <Button variant="outline" size="sm">
                   View Profile
@@ -270,9 +274,28 @@ const ProductDetail = () => {
                 <ShoppingCart className="h-5 w-5" />
                 {addToCart.isPending ? 'Adding...' : 'Add to Cart'}
               </Button>
-              <Button size="lg" variant="outline" className="flex-1 gap-2" onClick={handleContact}>
-                <MessageCircle className="h-5 w-5" />
-                Contact Seller
+              <Button
+                size="lg"
+                variant="secondary"
+                className="flex-1 gap-2"
+                onClick={async () => {
+                  // Buy now: add to cart then go to cart/checkout
+                  if (!isAuthenticated) {
+                    toast.error('Login required', { description: 'Please login to continue.' });
+                    navigate('/login');
+                    return;
+                  }
+
+                  try {
+                    await addToCart.mutateAsync({ productId: effectiveProduct.id, quantity: 1 });
+                    navigate('/cart');
+                  } catch (err) {
+                    const msg = err instanceof Error ? err.message : 'Please try again.';
+                    toast.error('Failed to proceed to buy', { description: msg });
+                  }
+                }}
+              >
+                Buy Now
               </Button>
             </div>
 
@@ -284,20 +307,20 @@ const ProductDetail = () => {
             {/* Description */}
             <div>
               <h3 className="font-semibold mb-2">Description</h3>
-              <p className="text-muted-foreground leading-relaxed">{product.description}</p>
+              <p className="text-muted-foreground leading-relaxed">{effectiveProduct.description}</p>
             </div>
 
             {/* Details */}
             <div className="grid grid-cols-2 gap-4">
               <div className="p-4 rounded-lg bg-secondary/50">
                 <p className="text-sm text-muted-foreground mb-1">Condition</p>
-                <p className="font-medium capitalize">{product.condition.replace('-', ' ')}</p>
+                <p className="font-medium capitalize">{effectiveProduct.condition.replace('-', ' ')}</p>
               </div>
               <div className="p-4 rounded-lg bg-secondary/50">
                 <p className="text-sm text-muted-foreground mb-1">Listed</p>
-                <p className="font-medium flex items-center gap-1">
+                  <p className="font-medium flex items-center gap-1">
                   <Calendar className="h-4 w-4" />
-                  {new Date(product.createdAt).toLocaleDateString()}
+                  {new Date(effectiveProduct.createdAt).toLocaleDateString()}
                 </p>
               </div>
             </div>
