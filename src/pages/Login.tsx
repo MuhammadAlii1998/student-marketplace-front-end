@@ -1,26 +1,26 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Layout } from "@/components/layout/Layout";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Mail, Lock, User, GraduationCap, Eye, EyeOff } from "lucide-react";
-import { toast } from "sonner";
-import esilvLogo from "@/assets/esilv-logo.png";
-import { useLogin, useRegister } from "@/hooks/useAuth";
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Layout } from '@/components/layout/Layout';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Mail, Lock, User, GraduationCap, Eye, EyeOff } from 'lucide-react';
+import { toast } from 'sonner';
+import esilvLogo from '@/assets/esilv-logo.png';
+import { useLogin, useRegister } from '@/hooks/useAuth';
 
 const Login = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
-  const [loginEmail, setLoginEmail] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
-  const [registerName, setRegisterName] = useState("");
-  const [registerEmail, setRegisterEmail] = useState("");
-  const [registerPassword, setRegisterPassword] = useState("");
-  const [studentId, setStudentId] = useState("");
-  
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [registerName, setRegisterName] = useState('');
+  const [registerEmail, setRegisterEmail] = useState('');
+  const [registerPassword, setRegisterPassword] = useState('');
+  const [studentId, setStudentId] = useState('');
+
   const loginMutation = useLogin();
   const registerMutation = useRegister();
 
@@ -31,64 +31,90 @@ const Login = () => {
         email: loginEmail,
         password: loginPassword,
       });
-      toast.success("Login successful!", { description: "Welcome back to ESILV Marketplace." });
-      navigate("/");
-    } catch (error: any) {
-      toast.error("Login failed", { 
-        description: error.message || "Invalid email or password." 
+      toast.success('Login successful!', {
+        description: 'Welcome back to ESILV Marketplace.',
       });
+      navigate('/');
+    } catch (error: unknown) {
+      const err = error as { message?: string; response?: unknown };
+      // Check if error is due to unverified email
+      if (err.message && err.message.includes('verify your email')) {
+        toast.error('Email not verified', {
+          description: 'Please verify your email first',
+        });
+        // Redirect to verification pending page
+        navigate(`/verification-pending?email=${encodeURIComponent(loginEmail)}`);
+      } else {
+        toast.error('Login failed', {
+          description: err.message || 'Invalid email or password.',
+        });
+      }
     }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Basic validation
     if (registerName.trim().length < 2) {
-      toast.error("Invalid name", { description: "Name must be at least 2 characters long." });
-      return;
-    }
-    
-    // ESILV email validation
-    if (!registerEmail.endsWith("@edu.devinci.fr") && !registerEmail.endsWith("@devinci.fr")) {
-      toast.error("Invalid email domain", { 
-        description: "Please use your ESILV email (@edu.devinci.fr or @devinci.fr)" 
+      toast.error('Invalid name', {
+        description: 'Name must be at least 2 characters long.',
       });
       return;
     }
-    
+
+    // ESILV email validation
+    if (!registerEmail.endsWith('@edu.devinci.fr') && !registerEmail.endsWith('@devinci.fr')) {
+      toast.error('Invalid email domain', {
+        description: 'Please use your ESILV email (@edu.devinci.fr or @devinci.fr)',
+      });
+      return;
+    }
+
     // Student ID validation (7-digit badge number format)
     if (!/^\d{7}$/.test(studentId)) {
-      toast.error("Invalid student ID", { 
-        description: "Student ID must be exactly 7 digits (e.g., 727700)" 
+      toast.error('Invalid student ID', {
+        description: 'Student ID must be exactly 7 digits (e.g., 727700)',
       });
       return;
     }
-    
+
     if (registerPassword.length < 6) {
-      toast.error("Weak password", { description: "Password must be at least 6 characters long." });
+      toast.error('Weak password', {
+        description: 'Password must be at least 6 characters long.',
+      });
       return;
     }
-    
+
     try {
       const result = await registerMutation.mutateAsync({
         name: registerName,
         email: registerEmail,
         password: registerPassword,
-        university: "ESILV",
+        university: 'ESILV',
         studentId: studentId,
       });
-      
-      toast.success("Registration successful!", { 
-        description: `Welcome ${registerName}! Your account has been created.` 
-      });
-      
-      // Navigate to home page after successful registration
-      setTimeout(() => navigate("/"), 500);
-    } catch (error: any) {
-      console.error("Registration error:", error);
-      toast.error("Registration failed", { 
-        description: error.message || "This email may already be registered. Please try logging in instead." 
+
+      // Check if email verification is required
+      if (result.verificationRequired) {
+        toast.success('Registration successful!', {
+          description: 'Please check your email to verify your account',
+        });
+        // Redirect to verification-pending page with email
+        navigate(`/verification-pending?email=${encodeURIComponent(registerEmail)}`);
+      } else {
+        toast.success('Registration successful!', {
+          description: `Welcome ${registerName}! Your account has been created.`,
+        });
+        // Navigate to home page after successful registration
+        setTimeout(() => navigate('/'), 500);
+      }
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      console.error('Registration error:', err);
+      toast.error('Registration failed', {
+        description:
+          err.message || 'This email may already be registered. Please try logging in instead.',
       });
     }
   };
@@ -139,7 +165,7 @@ const Login = () => {
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="login-password"
-                        type={showPassword ? "text" : "password"}
+                        type={showPassword ? 'text' : 'password'}
                         placeholder="••••••••"
                         className="pl-10 pr-10"
                         value={loginPassword}
@@ -151,7 +177,11 @@ const Login = () => {
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                       >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
                       </button>
                     </div>
                   </div>
@@ -159,7 +189,10 @@ const Login = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Checkbox id="remember" />
-                      <label htmlFor="remember" className="text-sm text-muted-foreground cursor-pointer">
+                      <label
+                        htmlFor="remember"
+                        className="text-sm text-muted-foreground cursor-pointer"
+                      >
                         Remember me
                       </label>
                     </div>
@@ -169,7 +202,7 @@ const Login = () => {
                   </div>
 
                   <Button type="submit" className="w-full" disabled={loginMutation.isPending}>
-                    {loginMutation.isPending ? "Signing in..." : "Sign In"}
+                    {loginMutation.isPending ? 'Signing in...' : 'Sign In'}
                   </Button>
                 </form>
               </TabsContent>
@@ -238,7 +271,7 @@ const Login = () => {
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="register-password"
-                        type={showPassword ? "text" : "password"}
+                        type={showPassword ? 'text' : 'password'}
                         placeholder="Create a secure password"
                         className="pl-10 pr-10"
                         value={registerPassword}
@@ -250,7 +283,11 @@ const Login = () => {
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                       >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
                       </button>
                     </div>
                   </div>
@@ -263,7 +300,7 @@ const Login = () => {
                   </div>
 
                   <Button type="submit" className="w-full" disabled={registerMutation.isPending}>
-                    {registerMutation.isPending ? "Creating account..." : "Create Account"}
+                    {registerMutation.isPending ? 'Creating account...' : 'Create Account'}
                   </Button>
                 </form>
               </TabsContent>
@@ -272,7 +309,7 @@ const Login = () => {
 
           {/* Help */}
           <p className="text-center text-sm text-muted-foreground mt-6">
-            Need help?{" "}
+            Need help?{' '}
             <Link to="/help" className="text-primary hover:underline">
               Visit our Help Center
             </Link>

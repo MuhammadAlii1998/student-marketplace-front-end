@@ -1,5 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import api from "@/lib/api";
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import api from '@/lib/api';
 
 export type User = {
   _id: string;
@@ -30,6 +30,7 @@ export type RegisterData = {
 export type AuthResponse = {
   token: string;
   user: User;
+  verificationRequired?: boolean;
 };
 
 // Local storage helpers
@@ -50,7 +51,7 @@ export const clearAuthToken = () => {
 // Hook to get current user profile
 export const useProfile = () => {
   return useQuery<User>({
-    queryKey: ["profile"],
+    queryKey: ['profile'],
     queryFn: async () => {
       const data = await api.get<User>('/auth/profile');
       return data;
@@ -63,7 +64,7 @@ export const useProfile = () => {
 // Hook to login
 export const useLogin = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (credentials: LoginCredentials) => {
       const data = await api.post<AuthResponse>('/auth/login', credentials);
@@ -71,9 +72,9 @@ export const useLogin = () => {
       return data;
     },
     onSuccess: (data) => {
-      queryClient.setQueryData(["profile"], data.user);
-      queryClient.invalidateQueries({ queryKey: ["cart"] });
-      queryClient.invalidateQueries({ queryKey: ["favorites"] });
+      queryClient.setQueryData(['profile'], data.user);
+      queryClient.invalidateQueries({ queryKey: ['cart'] });
+      queryClient.invalidateQueries({ queryKey: ['favorites'] });
     },
   });
 };
@@ -81,15 +82,31 @@ export const useLogin = () => {
 // Hook to register
 export const useRegister = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (userData: RegisterData) => {
       const data = await api.post<AuthResponse>('/auth/register', userData);
-      setAuthToken(data.token);
+      // Only set token if verification is not required
+      if (!data.verificationRequired && data.token) {
+        setAuthToken(data.token);
+      }
       return data;
     },
     onSuccess: (data) => {
-      queryClient.setQueryData(["profile"], data.user);
+      // Only set user data if verification is not required
+      if (!data.verificationRequired && data.user) {
+        queryClient.setQueryData(['profile'], data.user);
+      }
+    },
+  });
+};
+
+// Hook to resend verification email
+export const useResendVerification = () => {
+  return useMutation({
+    mutationFn: async (email: string) => {
+      const data = await api.post('/auth/resend-verification', { email });
+      return data;
     },
   });
 };
@@ -97,7 +114,7 @@ export const useRegister = () => {
 // Hook to logout
 export const useLogout = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async () => {
       clearAuthToken();
@@ -112,14 +129,14 @@ export const useLogout = () => {
 // Hook to update profile
 export const useUpdateProfile = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (updates: Partial<User>) => {
       const data = await api.put<User>('/auth/profile', updates);
       return data;
     },
     onSuccess: (data) => {
-      queryClient.setQueryData(["profile"], data);
+      queryClient.setQueryData(['profile'], data);
     },
   });
 };
