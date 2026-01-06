@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useIsAuthenticated, useLogout } from '@/hooks/useAuth';
+import { useCart } from '@/hooks/useCart';
 import { toast } from 'sonner';
 import esilvLogo from '@/assets/esilv-marketplace-logo.png';
 
@@ -24,6 +25,10 @@ export function Header() {
   const navigate = useNavigate();
   const { isAuthenticated } = useIsAuthenticated();
   const logout = useLogout();
+  const { data: cart } = useCart();
+
+  // Calculate total items in cart
+  const cartItemCount = cart?.items?.reduce((total, item) => total + item.quantity, 0) || 0;
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,9 +98,11 @@ export function Header() {
           <Link to="/cart">
             <Button variant="ghost" size="icon" className="relative">
               <ShoppingCart className="h-5 w-5" />
-              <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">
-                3
-              </span>
+              {cartItemCount > 0 && (
+                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">
+                  {cartItemCount > 99 ? '99+' : cartItemCount}
+                </span>
+              )}
             </Button>
           </Link>
 
