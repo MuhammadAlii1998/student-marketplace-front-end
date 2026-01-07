@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [registerName, setRegisterName] = useState('');
   const [registerEmail, setRegisterEmail] = useState('');
   const [registerPassword, setRegisterPassword] = useState('');
@@ -23,6 +24,15 @@ const Login = () => {
 
   const loginMutation = useLogin();
   const registerMutation = useRegister();
+
+  // Load remembered email on component mount
+  useEffect(() => {
+    const rememberedEmail = localStorage.getItem('rememberedEmail');
+    if (rememberedEmail) {
+      setLoginEmail(rememberedEmail);
+      setRememberMe(true);
+    }
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,6 +58,14 @@ const Login = () => {
         email: sanitizedEmail,
         password: loginPassword, // Never trim passwords
       });
+
+      // Handle remember me functionality
+      if (rememberMe) {
+        localStorage.setItem('rememberedEmail', sanitizedEmail);
+      } else {
+        localStorage.removeItem('rememberedEmail');
+      }
+
       toast.success('Login successful! Welcome back to ESILV Marketplace.');
       navigate('/');
     } catch (error: unknown) {
@@ -218,7 +236,11 @@ const Login = () => {
 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Checkbox id="remember" />
+                      <Checkbox
+                        id="remember"
+                        checked={rememberMe}
+                        onCheckedChange={(checked) => setRememberMe(checked === true)}
+                      />
                       <label
                         htmlFor="remember"
                         className="text-sm text-muted-foreground cursor-pointer"

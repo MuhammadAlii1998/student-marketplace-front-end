@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
@@ -32,11 +32,36 @@ const MAX_IMAGES = 6;
 const MAX_IMAGE_DIMENSION = 1920; // Max width/height for compressed images
 const COMPRESSION_QUALITY = 0.85; // 85% quality for JPEG compression
 
+// Default categories fallback if API fails
+const DEFAULT_CATEGORIES = [
+  { _id: '1', name: 'Books', slug: 'books' },
+  { _id: '2', name: 'Electronics', slug: 'electronics' },
+  { _id: '3', name: 'Furniture', slug: 'furniture' },
+  { _id: '4', name: 'Clothing', slug: 'clothing' },
+  { _id: '5', name: 'Sports', slug: 'sports' },
+  { _id: '6', name: 'Music', slug: 'music' },
+  { _id: '7', name: 'Others', slug: 'others' },
+];
+
 const Sell = () => {
   const navigate = useNavigate();
   const { isAuthenticated } = useIsAuthenticated();
-  const { data: categories = [] } = useCategories();
+  const { data: categoriesData, isLoading: categoriesLoading } = useCategories();
   const createProduct = useCreateProduct();
+
+  // Use fetched categories or fallback to default, and ensure "Others" is included
+  const categories = useMemo(() => {
+    const fetchedCategories = categoriesData || DEFAULT_CATEGORIES;
+    const hasOthers = fetchedCategories.some(
+      (cat) => cat.name.toLowerCase() === 'others' || cat.slug.toLowerCase() === 'others'
+    );
+
+    if (!hasOthers) {
+      return [...fetchedCategories, { _id: 'others', name: 'Others', slug: 'others' }];
+    }
+
+    return fetchedCategories;
+  }, [categoriesData]);
 
   // Separate state for actual files and preview URLs
   const [imageFiles, setImageFiles] = useState<File[]>([]);

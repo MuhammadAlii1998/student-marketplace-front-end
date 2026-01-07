@@ -18,6 +18,17 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 const conditions = ['new', 'like-new', 'good', 'fair'] as const;
 
+// Default categories fallback
+const DEFAULT_CATEGORIES = [
+  { _id: '1', name: 'Books', slug: 'books', count: 0 },
+  { _id: '2', name: 'Electronics', slug: 'electronics', count: 0 },
+  { _id: '3', name: 'Furniture', slug: 'furniture', count: 0 },
+  { _id: '4', name: 'Clothing', slug: 'clothing', count: 0 },
+  { _id: '5', name: 'Sports', slug: 'sports', count: 0 },
+  { _id: '6', name: 'Music', slug: 'music', count: 0 },
+  { _id: '7', name: 'Others', slug: 'others', count: 0 },
+];
+
 const Products = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -26,7 +37,21 @@ const Products = () => {
   const [showFilters, setShowFilters] = useState(false);
 
   // Fetch categories for filter dropdown
-  const { data: categories = [] } = useCategories();
+  const { data: categoriesData } = useCategories();
+
+  // Use fetched categories or fallback, ensure "Others" is included
+  const categories = useMemo(() => {
+    const fetchedCategories = categoriesData || DEFAULT_CATEGORIES;
+    const hasOthers = fetchedCategories.some(
+      (cat) => cat.name.toLowerCase() === 'others' || cat.slug.toLowerCase() === 'others'
+    );
+
+    if (!hasOthers) {
+      return [...fetchedCategories, { _id: 'others', name: 'Others', slug: 'others', count: 0 }];
+    }
+
+    return fetchedCategories;
+  }, [categoriesData]);
 
   // Build filters object for API
   const filters = useMemo(
