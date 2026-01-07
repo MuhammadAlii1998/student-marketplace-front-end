@@ -1,24 +1,36 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Layout } from "@/components/layout/Layout";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useCategories } from "@/hooks/useCategories";
-import { useCreateProduct } from "@/hooks/useProducts";
-import { useIsAuthenticated } from "@/hooks/useAuth";
-import { Camera, Upload, X, Info, CheckCircle } from "lucide-react";
-import { toast } from "sonner";
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Layout } from '@/components/layout/Layout';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { useCategories } from '@/hooks/useCategories';
+import { useCreateProduct } from '@/hooks/useProducts';
+import { useIsAuthenticated } from '@/hooks/useAuth';
+import { Camera, Upload, X, Info, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { api } from '@/lib/api';
 
 const conditions = [
-  { value: "new", label: "New", description: "Brand new, never used" },
-  { value: "like-new", label: "Like New", description: "Used once or twice, no visible wear" },
-  { value: "good", label: "Good", description: "Normal use, minor wear" },
-  { value: "fair", label: "Fair", description: "Significant wear, fully functional" },
+  { value: 'new', label: 'New', description: 'Brand new, never used' },
+  { value: 'like-new', label: 'Like New', description: 'Used once or twice, no visible wear' },
+  { value: 'good', label: 'Good', description: 'Normal use, minor wear' },
+  { value: 'fair', label: 'Fair', description: 'Significant wear, fully functional' },
 ];
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_IMAGES = 6;
+const MAX_IMAGE_DIMENSION = 1920; // Max width/height for compressed images
+const COMPRESSION_QUALITY = 0.85; // 85% quality for JPEG compression
 
 const Sell = () => {
   const navigate = useNavigate();
@@ -26,83 +38,284 @@ const Sell = () => {
   const { data: categories = [] } = useCategories();
   const createProduct = useCreateProduct();
 
-  const [images, setImages] = useState<string[]>([]);
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("");
-  const [condition, setCondition] = useState("");
-  const [price, setPrice] = useState("");
-  const [originalPrice, setOriginalPrice] = useState("");
-  const [location, setLocation] = useState("");
+  // Separate state for actual files and preview URLs
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [category, setCategory] = useState('');
+  const [condition, setCondition] = useState('');
+  const [price, setPrice] = useState('');
+  const [originalPrice, setOriginalPrice] = useState('');
+  const [location, setLocation] = useState('');
 
   // Check authentication and redirect if not logged in
   useEffect(() => {
     if (!isAuthenticated) {
-      navigate("/login");
+      navigate('/login');
     }
   }, [isAuthenticated, navigate]);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files) {
-      Array.from(files).forEach((file) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          if (e.target?.result) {
-            setImages((prev) => [...prev.slice(0, 5), e.target!.result as string]);
+  // Compress image using Canvas API
+  const compressImage = async (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          // Calculate new dimensions while maintaining aspect ratio
+          if (width > height) {
+            if (width > MAX_IMAGE_DIMENSION) {
+              height = (height * MAX_IMAGE_DIMENSION) / width;
+              width = MAX_IMAGE_DIMENSION;
+            }
+          } else {
+            if (height > MAX_IMAGE_DIMENSION) {
+              width = (width * MAX_IMAGE_DIMENSION) / height;
+              height = MAX_IMAGE_DIMENSION;
+            }
           }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('Failed to get canvas context'));
+            return;
+          }
+
+          // Draw image on canvas
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Convert canvas to blob
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                reject(new Error('Failed to compress image'));
+                return;
+              }
+
+              // Create new file from blob
+              const compressedFile = new File([blob], file.name, {
+                type: 'image/jpeg',
+                lastModified: Date.now(),
+              });
+
+              // Log compression results
+              const originalSize = (file.size / 1024).toFixed(2);
+              const compressedSize = (compressedFile.size / 1024).toFixed(2);
+              const reduction = (((file.size - compressedFile.size) / file.size) * 100).toFixed(1);
+
+              console.log(
+                `Compressed ${file.name}: ${originalSize}KB → ${compressedSize}KB (${reduction}% reduction)`
+              );
+
+              resolve(compressedFile);
+            },
+            'image/jpeg',
+            COMPRESSION_QUALITY
+          );
         };
-        reader.readAsDataURL(file);
-      });
+        img.onerror = () => reject(new Error('Failed to load image'));
+      };
+      reader.onerror = () => reject(new Error('Failed to read file'));
+    });
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const currentImageCount = imageFiles.length;
+    const remainingSlots = MAX_IMAGES - currentImageCount;
+
+    if (remainingSlots <= 0) {
+      toast.error(`Maximum ${MAX_IMAGES} images allowed`);
+      return;
     }
+
+    const filesToProcess = Array.from(files).slice(0, remainingSlots);
+    let processedCount = 0;
+    const newFiles: File[] = [];
+    const newPreviews: string[] = [];
+
+    // Show processing toast
+    const processingToast = toast.loading('Processing images...', {
+      description: `Compressing ${filesToProcess.length} image${
+        filesToProcess.length > 1 ? 's' : ''
+      }`,
+    });
+
+    for (const file of filesToProcess) {
+      try {
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+          toast.error(`${file.name} is not an image file`);
+          continue;
+        }
+
+        // Validate file size
+        if (file.size > MAX_FILE_SIZE) {
+          toast.error(`${file.name} exceeds 5MB limit`);
+          continue;
+        }
+
+        // Compress image
+        const compressedFile = await compressImage(file);
+        newFiles.push(compressedFile);
+
+        // Generate preview from compressed image
+        const reader = new FileReader();
+        await new Promise<void>((resolve) => {
+          reader.onload = (e) => {
+            if (e.target?.result) {
+              newPreviews.push(e.target.result as string);
+            }
+            resolve();
+          };
+          reader.readAsDataURL(compressedFile);
+        });
+
+        processedCount++;
+      } catch (error) {
+        console.error(`Failed to process ${file.name}:`, error);
+        toast.error(`Failed to process ${file.name}`);
+      }
+    }
+
+    // Dismiss processing toast
+    toast.dismiss(processingToast);
+
+    if (processedCount > 0) {
+      setImageFiles((prev) => [...prev, ...newFiles]);
+      setImagePreviews((prev) => [...prev, ...newPreviews]);
+      toast.success(`${processedCount} image${processedCount > 1 ? 's' : ''} added successfully`);
+    }
+
+    // Reset input
+    e.target.value = '';
   };
 
   const removeImage = (index: number) => {
-    setImages((prev) => prev.filter((_, i) => i !== index));
+    setImageFiles((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const uploadImagesToCloudinary = async (files: File[]): Promise<string[]> => {
+    const uploadedUrls: string[] = [];
+    const token = localStorage.getItem('auth_token');
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const formData = new FormData();
+      formData.append('image', file);
+
+      try {
+        const response = await fetch(`${api.baseUrl}/products/upload-image`, {
+          method: 'POST',
+          headers: {
+            Authorization: token ? `Bearer ${token}` : '',
+          },
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || `Upload failed: ${response.statusText}`);
+        }
+
+        const data = (await response.json()) as { imageUrl: string };
+        if (data.imageUrl) {
+          uploadedUrls.push(data.imageUrl);
+        }
+      } catch (error) {
+        console.error(`Failed to upload image ${i + 1}:`, error);
+        throw new Error(
+          `Failed to upload image ${i + 1}: ${
+            error instanceof Error ? error.message : 'Unknown error'
+          }`
+        );
+      }
+    }
+
+    return uploadedUrls;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (images.length === 0) {
-      toast.error("Please add at least one image");
+
+    if (imageFiles.length === 0) {
+      toast.error('Please add at least one image');
       return;
     }
 
     if (!price || parseFloat(price) <= 0) {
-      toast.error("Please enter a valid price");
+      toast.error('Please enter a valid price');
       return;
     }
 
+    if (originalPrice && parseFloat(originalPrice) < parseFloat(price)) {
+      toast.error('Original price must be greater than selling price');
+      return;
+    }
+
+    setIsSubmitting(true);
+
     try {
+      // Step 1: Upload images to Cloudinary
+      setUploadingImages(true);
+      toast.info('Uploading images...', {
+        description: `Uploading ${imageFiles.length} image${imageFiles.length > 1 ? 's' : ''}`,
+      });
+
+      const imageUrls = await uploadImagesToCloudinary(imageFiles);
+      setUploadingImages(false);
+
+      toast.success('Images uploaded successfully!');
+
+      // Step 2: Create product with uploaded image URLs
       const productData = {
         title,
         description,
         price: parseFloat(price),
         originalPrice: originalPrice ? parseFloat(originalPrice) : undefined,
         category,
-        condition: condition as "new" | "like-new" | "good" | "fair",
+        condition: condition as 'new' | 'like-new' | 'good' | 'fair',
         location,
-        images: images, // In production, upload to storage service first
-        image: images[0], // Primary image
+        images: imageUrls,
+        image: imageUrls[0], // Primary/cover image
       };
 
       await createProduct.mutateAsync(productData);
-      
-      toast.success("Listing created successfully!", {
-        description: "Your item is now visible to other students.",
+
+      toast.success('Listing created successfully!', {
+        description: 'Your item is now visible to other students.',
       });
-      
+
       // Navigate to products page or user's listings
-      setTimeout(() => navigate("/profile"), 1000);
-    } catch (error: any) {
-      toast.error("Failed to create listing", {
-        description: error.message || "Please try again.",
+      setTimeout(() => navigate('/profile'), 1000);
+    } catch (error) {
+      setUploadingImages(false);
+      toast.error('Failed to create listing', {
+        description: error instanceof Error ? error.message : 'Please try again.',
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const isFormValid = images.length > 0 && title && description && category && condition && price && location;
+  const isFormValid =
+    imageFiles.length > 0 && title && description && category && condition && price && location;
 
   return (
     <Layout>
@@ -117,19 +330,27 @@ const Sell = () => {
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Images */}
           <div className="space-y-4">
-            <Label className="text-base font-semibold">Photos *</Label>
+            <div className="flex items-center justify-between">
+              <Label className="text-base font-semibold">Photos *</Label>
+              <span className="text-sm text-muted-foreground">
+                {imageFiles.length} of {MAX_IMAGES} photos
+              </span>
+            </div>
             <p className="text-sm text-muted-foreground">
-              Add up to 6 photos. The first photo will be your cover image.
+              Add up to 6 photos (max 5MB each). The first photo will be your cover image.
             </p>
-            
+
             <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
-              {images.map((img, index) => (
-                <div key={index} className="relative aspect-square rounded-lg overflow-hidden bg-secondary">
-                  <img src={img} alt="" className="h-full w-full object-cover" />
+              {imagePreviews.map((preview, index) => (
+                <div
+                  key={index}
+                  className="relative aspect-square rounded-lg overflow-hidden bg-secondary"
+                >
+                  <img src={preview} alt="" className="h-full w-full object-cover" />
                   <button
                     type="button"
                     onClick={() => removeImage(index)}
-                    className="absolute top-1 right-1 h-6 w-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center"
+                    className="absolute top-1 right-1 h-6 w-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center hover:bg-destructive/90 transition-colors"
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -140,8 +361,8 @@ const Sell = () => {
                   )}
                 </div>
               ))}
-              
-              {images.length < 6 && (
+
+              {imageFiles.length < MAX_IMAGES && (
                 <label className="aspect-square rounded-lg border-2 border-dashed border-border hover:border-primary hover:bg-primary/5 transition-colors cursor-pointer flex flex-col items-center justify-center">
                   <Camera className="h-6 w-6 text-muted-foreground mb-1" />
                   <span className="text-xs text-muted-foreground">Add Photo</span>
@@ -159,7 +380,9 @@ const Sell = () => {
 
           {/* Title */}
           <div className="space-y-2">
-            <Label htmlFor="title" className="text-base font-semibold">Title *</Label>
+            <Label htmlFor="title" className="text-base font-semibold">
+              Title *
+            </Label>
             <Input
               id="title"
               placeholder="e.g., Calculus Textbook 8th Edition"
@@ -172,7 +395,9 @@ const Sell = () => {
 
           {/* Description */}
           <div className="space-y-2">
-            <Label htmlFor="description" className="text-base font-semibold">Description *</Label>
+            <Label htmlFor="description" className="text-base font-semibold">
+              Description *
+            </Label>
             <Textarea
               id="description"
               placeholder="Describe your item, including condition details, what's included, and any defects..."
@@ -215,14 +440,18 @@ const Sell = () => {
           {/* Condition */}
           <div className="space-y-4">
             <Label className="text-base font-semibold">Condition *</Label>
-            <RadioGroup value={condition} onValueChange={setCondition} className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <RadioGroup
+              value={condition}
+              onValueChange={setCondition}
+              className="grid grid-cols-2 md:grid-cols-4 gap-3"
+            >
               {conditions.map((cond) => (
                 <label
                   key={cond.value}
                   className={`flex flex-col p-4 rounded-lg border-2 cursor-pointer transition-all ${
                     condition === cond.value
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:border-primary/50"
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border hover:border-primary/50'
                   }`}
                 >
                   <RadioGroupItem value={cond.value} className="sr-only" />
@@ -237,9 +466,13 @@ const Sell = () => {
           <div className="space-y-4">
             <div className="grid md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="price" className="text-base font-semibold">Selling Price *</Label>
+                <Label htmlFor="price" className="text-base font-semibold">
+                  Selling Price *
+                </Label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    $
+                  </span>
                   <Input
                     id="price"
                     type="number"
@@ -258,7 +491,9 @@ const Sell = () => {
                   Original Price (Optional)
                 </Label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    $
+                  </span>
                   <Input
                     id="originalPrice"
                     type="number"
@@ -270,9 +505,7 @@ const Sell = () => {
                     className="pl-8"
                   />
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Show buyers how much they're saving
-                </p>
+                <p className="text-xs text-muted-foreground">Show buyers how much they're saving</p>
               </div>
             </div>
 
@@ -290,12 +523,17 @@ const Sell = () => {
               type="submit"
               size="lg"
               className="flex-1 gap-2"
-              disabled={!isFormValid || createProduct.isPending}
+              disabled={!isFormValid || isSubmitting || uploadingImages}
             >
-              {createProduct.isPending ? (
+              {uploadingImages ? (
                 <>
-                  <div className="h-4 w-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                  Publishing...
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Uploading images...
+                </>
+              ) : isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Creating listing...
                 </>
               ) : (
                 <>
@@ -304,12 +542,13 @@ const Sell = () => {
                 </>
               )}
             </Button>
-            <Button 
-              type="button" 
-              variant="outline" 
-              size="lg" 
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
               className="sm:w-auto"
-              onClick={() => navigate("/profile")}
+              onClick={() => navigate('/profile')}
+              disabled={isSubmitting || uploadingImages}
             >
               Cancel
             </Button>
