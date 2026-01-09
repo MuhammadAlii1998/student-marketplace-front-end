@@ -58,11 +58,14 @@ const MyReservations = () => {
     );
   }
 
-  const activeReservations = reservations?.filter((r) => isReservationActive(r)) || [];
-  const expiredReservations =
-    reservations?.filter((r) => r.status.toUpperCase() === 'EXPIRED') || [];
-  const cancelledReservations =
-    reservations?.filter((r) => r.status.toUpperCase() === 'CANCELLED') || [];
+  // Ensure reservations is always an array
+  const reservationsList = Array.isArray(reservations) ? reservations : [];
+
+  const activeReservations = reservationsList.filter((r) => isReservationActive(r));
+  const expiredReservations = reservationsList.filter((r) => r.status.toUpperCase() === 'EXPIRED');
+  const cancelledReservations = reservationsList.filter(
+    (r) => r.status.toUpperCase() === 'CANCELLED'
+  );
 
   return (
     <Layout>

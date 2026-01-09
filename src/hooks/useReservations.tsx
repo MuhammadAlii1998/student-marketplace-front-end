@@ -28,9 +28,23 @@ export type ReservationResponse = {
 export function useMyReservations() {
   return useQuery<Reservation[]>({
     queryKey: ['reservations', 'my'],
-    queryFn: () => api.get<Reservation[]>('/reservations/my'),
+    queryFn: async () => {
+      const response = await api.get<Reservation[] | { reservations: Reservation[] }>(
+        '/reservations/my'
+      );
+      // Handle both response formats: array or object with reservations property
+      if (Array.isArray(response)) {
+        return response;
+      }
+      if (response && typeof response === 'object' && 'reservations' in response) {
+        return response.reservations;
+      }
+      // If response is null/undefined or unexpected format, return empty array
+      return [];
+    },
     staleTime: 1000 * 30, // 30 seconds
     refetchInterval: 1000 * 60, // refetch every minute to keep timers accurate
+    initialData: [], // Ensure data is always an array, even before first fetch
   });
 }
 
