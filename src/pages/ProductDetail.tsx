@@ -7,6 +7,7 @@ import { useToggleFavorite } from '@/hooks/useFavorites';
 import { useIsAuthenticated } from '@/hooks/useAuth';
 import { useProductReservation, isReservationActive } from '@/hooks/useReservations';
 import { ProductCard } from '@/components/ProductCard';
+import { ContactSellerButton } from '@/components/ContactSellerButton';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -16,7 +17,6 @@ import {
   Heart,
   Share2,
   MapPin,
-  MessageCircle,
   ShoppingCart,
   Star,
   ChevronLeft,
@@ -128,14 +128,6 @@ const ProductDetail = () => {
         description: errorMessage,
       });
     }
-  };
-
-  const handleContact = () => {
-    toast.success('Message sent!', {
-      description: `Your message has been sent to ${
-        effectiveProduct.seller?.name || 'the seller'
-      }.`,
-    });
   };
 
   const handleReserve = () => {
@@ -297,9 +289,13 @@ const ProductDetail = () => {
                     )}
                   </div>
                 </div>
-                <Button variant="outline" size="sm">
-                  View Profile
-                </Button>
+                <ContactSellerButton
+                  productId={effectiveProduct.id}
+                  sellerId={effectiveProduct.seller?.id || ''}
+                  sellerName={effectiveProduct.seller?.name || 'Seller'}
+                  variant="outline"
+                  size="sm"
+                />
               </div>
             </div>
 

@@ -1,5 +1,16 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Search, Menu, X, User, Plus, LogIn, LogOut, Clock } from 'lucide-react';
+import {
+  ShoppingCart,
+  Search,
+  Menu,
+  X,
+  User,
+  Plus,
+  LogIn,
+  LogOut,
+  Clock,
+  MessageSquare,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useState } from 'react';
@@ -107,11 +118,19 @@ export function Header() {
           </Link>
 
           {isAuthenticated && (
-            <Link to="/reservations">
-              <Button variant="ghost" size="icon" title="My Reservations">
-                <Clock className="h-5 w-5" />
-              </Button>
-            </Link>
+            <>
+              <Link to="/messages">
+                <Button variant="ghost" size="icon" title="Messages">
+                  <MessageSquare className="h-5 w-5" />
+                </Button>
+              </Link>
+
+              <Link to="/reservations">
+                <Button variant="ghost" size="icon" title="My Reservations">
+                  <Clock className="h-5 w-5" />
+                </Button>
+              </Link>
+            </>
           )}
 
           <Link to="/profile">

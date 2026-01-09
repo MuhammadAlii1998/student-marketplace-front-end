@@ -19,6 +19,8 @@ import VerifyEmail from './pages/VerifyEmail';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import MyReservations from './pages/MyReservations';
+import ChatList from './pages/ChatList';
+import ChatWindow from './pages/ChatWindow';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -51,6 +53,8 @@ const App = () => (
           <Route path="/sell" element={<Sell />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/reservations" element={<MyReservations />} />
+          <Route path="/messages" element={<ChatList />} />
+          <Route path="/chat/:chatId" element={<ChatWindow />} />
           <Route path="/category/:slug" element={<Category />} />
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
