@@ -34,12 +34,18 @@ export function useMyReservations() {
   });
 }
 
+// Helper to check if a string is a valid MongoDB ObjectId
+function isValidObjectId(id: string): boolean {
+  // MongoDB ObjectIds are 24 character hex strings
+  return /^[0-9a-fA-F]{24}$/.test(id);
+}
+
 // Get reservation for a specific product
 export function useProductReservation(productId?: string) {
   return useQuery<Reservation | null>({
     queryKey: ['reservations', 'product', productId],
     queryFn: () => api.get<Reservation | null>(`/reservations/product/${productId}`),
-    enabled: !!productId,
+    enabled: !!productId && isValidObjectId(productId), // Only fetch if valid ObjectId
     staleTime: 1000 * 30, // 30 seconds
     refetchInterval: 1000 * 60, // refetch every minute
   });
@@ -50,7 +56,7 @@ export function useReservation(reservationId?: string) {
   return useQuery<Reservation>({
     queryKey: ['reservations', reservationId],
     queryFn: () => api.get<Reservation>(`/reservations/${reservationId}`),
-    enabled: !!reservationId,
+    enabled: !!reservationId && isValidObjectId(reservationId), // Only fetch if valid ObjectId
     staleTime: 1000 * 30,
   });
 }
