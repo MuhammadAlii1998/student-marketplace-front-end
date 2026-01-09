@@ -62,9 +62,11 @@ const MyReservations = () => {
   const reservationsList = Array.isArray(reservations) ? reservations : [];
 
   const activeReservations = reservationsList.filter((r) => isReservationActive(r));
-  const expiredReservations = reservationsList.filter((r) => r.status.toUpperCase() === 'EXPIRED');
+  const expiredReservations = reservationsList.filter(
+    (r) => r?.status?.toUpperCase() === 'EXPIRED'
+  );
   const cancelledReservations = reservationsList.filter(
-    (r) => r.status.toUpperCase() === 'CANCELLED'
+    (r) => r?.status?.toUpperCase() === 'CANCELLED'
   );
 
   return (
@@ -139,13 +141,16 @@ const MyReservations = () => {
                               />
                             </div>
                             <h3 className="font-semibold mb-1">
-                              Product ID: {reservation.productId}
+                              Product ID: {reservation.productId || 'Unknown'}
                             </h3>
                             <p className="text-sm text-muted-foreground">
-                              Reserved for {reservation.durationMinutes} minutes
+                              Reserved for {reservation.durationMinutes || 0} minutes
                             </p>
                             <p className="text-xs text-muted-foreground mt-1">
-                              Reserved on {new Date(reservation.reservedAt).toLocaleString()}
+                              Reserved on{' '}
+                              {reservation.reservedAt
+                                ? new Date(reservation.reservedAt).toLocaleString()
+                                : 'Unknown date'}
                             </p>
                           </div>
                         </div>

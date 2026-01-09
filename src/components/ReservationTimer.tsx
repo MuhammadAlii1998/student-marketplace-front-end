@@ -20,7 +20,12 @@ export function ReservationTimer({
   const [timeLeft, setTimeLeft] = useState(() => formatTimeRemaining(expiresAt));
   const [isExpired, setIsExpired] = useState(() => getTimeRemaining(expiresAt) === 0);
 
+  // Validate expiresAt after hooks
+  const isInvalidDate = !expiresAt || typeof expiresAt !== 'string';
+
   useEffect(() => {
+    if (isInvalidDate) return; // Don't set up interval for invalid dates
+
     // Update immediately
     const remaining = getTimeRemaining(expiresAt);
     setIsExpired(remaining === 0);
@@ -42,10 +47,10 @@ export function ReservationTimer({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [expiresAt]);
+  }, [expiresAt, isInvalidDate]);
 
-  if (isExpired) {
-    return null; // Don't show expired timers
+  if (isInvalidDate || isExpired) {
+    return null; // Don't show expired or invalid timers
   }
 
   if (compact) {

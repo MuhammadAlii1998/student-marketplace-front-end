@@ -44,6 +44,15 @@ export function ReservationModal({
   const createReservation = useCreateReservation();
 
   const handleReserve = async () => {
+    // Validate inputs
+    if (!productId || typeof productId !== 'string') {
+      toast.error('Invalid product', {
+        description: 'Product ID is missing or invalid.',
+      });
+      onClose();
+      return;
+    }
+
     // Check authentication
     if (!isAuthenticated) {
       toast.error('Login required', {
@@ -60,7 +69,18 @@ export function ReservationModal({
         durationMinutes: selectedDuration, // matches backend API
       });
 
+      // Validate response
+      if (!response?.reservation?.expiresAt) {
+        throw new Error('Invalid response from server');
+      }
+
       const expiresAt = new Date(response.reservation.expiresAt);
+
+      // Check if date is valid
+      if (isNaN(expiresAt.getTime())) {
+        throw new Error('Invalid expiration date received');
+      }
+
       const formattedTime = expiresAt.toLocaleString('en-US', {
         month: 'short',
         day: 'numeric',
@@ -70,7 +90,7 @@ export function ReservationModal({
       });
 
       toast.success('Product reserved!', {
-        description: `${productTitle} is reserved until ${formattedTime}`,
+        description: `${productTitle || 'Product'} is reserved until ${formattedTime}`,
         duration: 5000,
       });
 
