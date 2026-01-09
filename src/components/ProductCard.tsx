@@ -1,13 +1,16 @@
-import { Link, useNavigate } from "react-router-dom";
-import { Heart, MapPin, ShoppingCart } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-import { useAddToCart } from "@/hooks/useCart";
-import { useToggleFavorite } from "@/hooks/useFavorites";
-import { useIsAuthenticated } from "@/hooks/useAuth";
-import { toast } from "sonner";
-import { useState } from "react";
+import { Link, useNavigate } from 'react-router-dom';
+import { Heart, MapPin, ShoppingCart, Clock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+import { useAddToCart } from '@/hooks/useCart';
+import { useToggleFavorite } from '@/hooks/useFavorites';
+import { useIsAuthenticated } from '@/hooks/useAuth';
+import { useProductReservation, isReservationActive } from '@/hooks/useReservations';
+import { ReservationModal } from '@/components/ReservationModal';
+import { ReservationTimer } from '@/components/ReservationTimer';
+import { toast } from 'sonner';
+import { useState } from 'react';
 
 interface ProductCardProps {
   id: string;
@@ -15,17 +18,17 @@ interface ProductCardProps {
   price: number;
   image: string;
   category: string;
-  condition: "new" | "like-new" | "good" | "fair";
+  condition: 'new' | 'like-new' | 'good' | 'fair';
   location?: string;
   seller?: string;
   isFavorite?: boolean;
 }
 
 const conditionColors = {
-  new: "bg-success text-success-foreground",
-  "like-new": "bg-accent text-accent-foreground",
-  good: "bg-primary text-primary-foreground",
-  fair: "bg-warning text-warning-foreground",
+  new: 'bg-success text-success-foreground',
+  'like-new': 'bg-accent text-accent-foreground',
+  good: 'bg-primary text-primary-foreground',
+  fair: 'bg-warning text-warning-foreground',
 };
 
 export function ProductCard({
@@ -44,50 +47,71 @@ export function ProductCard({
   const addToCart = useAddToCart();
   const toggleFavorite = useToggleFavorite();
   const [favorite, setFavorite] = useState(isFavorite);
+  const [showReservationModal, setShowReservationModal] = useState(false);
+
+  // Get reservation status for this product
+  const { data: reservation } = useProductReservation(id);
+  const isReserved = !!reservation && isReservationActive(reservation);
+  const isOwnReservation = isReserved && reservation && isAuthenticated;
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
-    
+
     if (!isAuthenticated) {
-      toast.error("Login required", {
-        description: "Please login to add items to your cart.",
+      toast.error('Login required', {
+        description: 'Please login to add items to your cart.',
       });
-      navigate("/login");
+      navigate('/login');
       return;
     }
 
     try {
       await addToCart.mutateAsync({ productId: id, quantity: 1 });
-      toast.success("Added to cart!", {
+      toast.success('Added to cart!', {
         description: `${title} has been added to your cart.`,
       });
-    } catch (error: any) {
-      toast.error("Failed to add to cart", {
-        description: error.message || "Please try again.",
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      toast.error('Failed to add to cart', {
+        description: message || 'Please try again.',
       });
     }
   };
 
   const handleFavoriteToggle = async (e: React.MouseEvent) => {
     e.preventDefault();
-    
+
     if (!isAuthenticated) {
-      toast.error("Login required", {
-        description: "Please login to save favorites.",
+      toast.error('Login required', {
+        description: 'Please login to save favorites.',
       });
-      navigate("/login");
+      navigate('/login');
       return;
     }
-
     try {
       await toggleFavorite.toggleFavorite(id, favorite);
       setFavorite(!favorite);
-      toast.success(favorite ? "Removed from favorites" : "Added to favorites");
-    } catch (error: any) {
-      toast.error("Failed to update favorites", {
-        description: error.message || "Please try again.",
+      toast.success(favorite ? 'Removed from favorites' : 'Added to favorites');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      toast.error('Failed to update favorites', {
+        description: message || 'Please try again.',
       });
     }
+  };
+
+  const handleReserve = (e: React.MouseEvent) => {
+    e.preventDefault();
+
+    if (!isAuthenticated) {
+      toast.error('Login required', {
+        description: 'Please login to reserve products.',
+      });
+      navigate('/login');
+      return;
+    }
+
+    setShowReservationModal(true);
   };
 
   return (
@@ -106,16 +130,16 @@ export function ProductCard({
           variant="ghost"
           size="icon"
           className={cn(
-            "absolute top-3 right-3 h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm",
-            favorite && "text-primary"
+            'absolute top-3 right-3 h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm',
+            favorite && 'text-primary'
           )}
           onClick={handleFavoriteToggle}
           disabled={toggleFavorite.isLoading}
         >
-          <Heart className={cn("h-4 w-4", favorite && "fill-current")} />
+          <Heart className={cn('h-4 w-4', favorite && 'fill-current')} />
         </Button>
-        <Badge className={cn("absolute top-3 left-3", conditionColors[condition])}>
-          {condition.charAt(0).toUpperCase() + condition.slice(1).replace("-", " ")}
+        <Badge className={cn('absolute top-3 left-3', conditionColors[condition])}>
+          {condition.charAt(0).toUpperCase() + condition.slice(1).replace('-', ' ')}
         </Badge>
       </div>
 
@@ -126,10 +150,8 @@ export function ProductCard({
             {title}
           </h3>
         </div>
-        
-        <p className="text-2xl font-bold text-primary mb-2">
-          ${price.toFixed(2)}
-        </p>
+
+        <p className="text-2xl font-bold text-primary mb-2">${price.toFixed(2)}</p>
 
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Badge variant="secondary" className="font-normal">
@@ -149,17 +171,47 @@ export function ProductCard({
           </p>
         )}
 
-        {/* Add to Cart Button */}
-        <Button
-          size="sm"
-          className="w-full mt-3 gap-2"
-          onClick={handleAddToCart}
-          disabled={addToCart.isPending}
-        >
-          <ShoppingCart className="h-4 w-4" />
-          {addToCart.isPending ? "Adding..." : "Add to Cart"}
-        </Button>
+        {/* Reservation Status */}
+        {isReserved && reservation && (
+          <div className="mt-3">
+            <ReservationTimer
+              expiresAt={reservation.expiresAt}
+              isOwnReservation={isOwnReservation}
+              compact
+            />
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex gap-2 mt-3">
+          <Button
+            size="sm"
+            className="flex-1 gap-2"
+            onClick={handleAddToCart}
+            disabled={addToCart.isPending || (isReserved && !isOwnReservation)}
+          >
+            <ShoppingCart className="h-4 w-4" />
+            {addToCart.isPending ? 'Adding...' : 'Add to Cart'}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-2"
+            onClick={handleReserve}
+            disabled={isReserved}
+          >
+            <Clock className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
+
+      {/* Reservation Modal */}
+      <ReservationModal
+        productId={id}
+        productTitle={title}
+        isOpen={showReservationModal}
+        onClose={() => setShowReservationModal(false)}
+      />
     </Link>
   );
 }

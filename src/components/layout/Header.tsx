@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Search, Menu, X, User, Plus, LogIn, LogOut } from 'lucide-react';
+import { ShoppingCart, Search, Menu, X, User, Plus, LogIn, LogOut, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useState } from 'react';
@@ -106,6 +106,14 @@ export function Header() {
             </Button>
           </Link>
 
+          {isAuthenticated && (
+            <Link to="/reservations">
+              <Button variant="ghost" size="icon" title="My Reservations">
+                <Clock className="h-5 w-5" />
+              </Button>
+            </Link>
+          )}
+
           <Link to="/profile">
             <Button variant="ghost" size="icon">
               <User className="h-5 w-5" />
@@ -173,6 +181,21 @@ export function Header() {
                 {link.label}
               </Link>
             ))}
+            {isAuthenticated && (
+              <Link
+                to="/reservations"
+                className={cn(
+                  'px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2',
+                  location.pathname === '/reservations'
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-muted-foreground hover:bg-secondary'
+                )}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <Clock className="h-4 w-4" />
+                My Reservations
+              </Link>
+            )}
             {isAuthenticated ? (
               <Button
                 variant="outline"

@@ -18,6 +18,7 @@ import VerificationPending from './pages/VerificationPending';
 import VerifyEmail from './pages/VerifyEmail';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import MyReservations from './pages/MyReservations';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -49,6 +50,7 @@ const App = () => (
           <Route path="/cart" element={<Cart />} />
           <Route path="/sell" element={<Sell />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/reservations" element={<MyReservations />} />
           <Route path="/category/:slug" element={<Category />} />
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
