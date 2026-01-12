@@ -91,9 +91,9 @@ const Category = () => {
     const similarCategoryProducts = allProducts.filter(
       (p) => p.category !== category?.name && p.category
     );
-    return similarCategoryProducts.sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    ).slice(0, 4);
+    return similarCategoryProducts
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 4);
   };
 
   const handleNotifyMe = (e: React.FormEvent) => {
@@ -270,7 +270,8 @@ const Category = () => {
                 <div className="mb-6">
                   <h4 className="text-xl font-semibold mb-2">Check Out These Items</h4>
                   <p className="text-sm text-muted-foreground">
-                    While you wait for {category.name.toLowerCase()} items, browse recently added products from other categories
+                    While you wait for {category.name.toLowerCase()} items, browse recently added
+                    products from other categories
                   </p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

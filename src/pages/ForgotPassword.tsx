@@ -118,7 +118,7 @@ const ForgotPassword = () => {
                     <Input
                       id="email"
                       type="email"
-                      placeholder="your.name@edu.devinci.fr"
+                      placeholder="your.name@edu.devinci.fr or @devinci.fr"
                       className="pl-10"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}

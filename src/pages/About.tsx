@@ -1,37 +1,40 @@
-import { Layout } from "@/components/layout/Layout";
-import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
-import { 
-  GraduationCap, 
-  ShieldCheck, 
-  Users, 
-  Recycle, 
-  Target, 
+import { Layout } from '@/components/layout/Layout';
+import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
+import {
+  GraduationCap,
+  ShieldCheck,
+  Users,
+  Recycle,
+  Target,
   Heart,
-  ExternalLink
-} from "lucide-react";
-import esilvLogo from "@/assets/esilv-marketplace-logo.png";
+  ExternalLink,
+} from 'lucide-react';
+import esilvLogo from '@/assets/esilv-marketplace-logo.png';
 
 const values = [
   {
     icon: ShieldCheck,
-    title: "Trust & Safety",
-    description: "All users are verified ESILV students. Transactions happen within our trusted campus community.",
+    title: 'Trust & Safety',
+    description:
+      'All users are verified ESILV students. Transactions happen within our trusted campus community.',
   },
   {
     icon: Recycle,
-    title: "Sustainability",
-    description: "Promote circular economy by giving products a second life instead of buying new.",
+    title: 'Sustainability',
+    description: 'Promote circular economy by giving products a second life instead of buying new.',
   },
   {
     icon: Users,
-    title: "Community",
-    description: "Built by students, for students. Connect with fellow engineers and share resources.",
+    title: 'Community',
+    description:
+      'Built by students, for students. Connect with fellow engineers and share resources.',
   },
   {
     icon: Heart,
-    title: "Affordability",
-    description: "Access quality products at student-friendly prices. Save money on textbooks and equipment.",
+    title: 'Affordability',
+    description:
+      'Access quality products at student-friendly prices. Save money on textbooks and equipment.',
   },
 ];
 
@@ -47,8 +50,9 @@ const About = () => {
               About ESILV Marketplace
             </h1>
             <p className="text-lg text-muted-foreground mb-8">
-              The official student marketplace for École Supérieure d'Ingénieurs Léonard de Vinci. 
-              A platform designed to help ESILV students buy, sell, and exchange products within our engineering community.
+              The official student marketplace for École Supérieure d'Ingénieurs Léonard de Vinci. A
+              platform designed to help ESILV students buy, sell, and exchange products within our
+              engineering community.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
               <Link to="/products">
@@ -78,13 +82,13 @@ const About = () => {
                   <h2 className="text-2xl font-heading font-bold">Our Mission</h2>
                 </div>
                 <p className="text-muted-foreground leading-relaxed mb-4">
-                  ESILV Marketplace was created to address the unique needs of engineering students. 
-                  We understand the high costs of technical textbooks, calculators, and equipment that 
-                  students need throughout their studies.
+                  ESILV Marketplace was created to address the unique needs of engineering students.
+                  We understand the high costs of technical textbooks, calculators, and equipment
+                  that students need throughout their studies.
                 </p>
                 <p className="text-muted-foreground leading-relaxed">
-                  Our platform enables students to buy and sell used items at fair prices, 
-                  reducing waste and making education more affordable. From textbooks to electronics, 
+                  Our platform enables students to buy and sell used items at fair prices, reducing
+                  waste and making education more affordable. From textbooks to electronics,
                   furniture to sports equipment — if a student needs it, they can find it here.
                 </p>
               </div>
@@ -131,9 +135,10 @@ const About = () => {
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-2xl md:text-3xl font-heading font-bold mb-4">About ESILV</h2>
             <p className="text-muted-foreground mb-8 leading-relaxed">
-              ESILV (École Supérieure d'Ingénieurs Léonard de Vinci) is a prestigious French engineering 
-              school located at La Défense, Paris. Part of the Pôle Léonard de Vinci, ESILV offers 
-              cutting-edge programs in digital engineering, finance, new energies, and more.
+              ESILV (École Supérieure d'Ingénieurs Léonard de Vinci) is a prestigious French
+              engineering school located at La Défense, Paris. Part of the Pôle Léonard de Vinci,
+              ESILV offers cutting-edge programs in digital engineering, finance, new energies, and
+              more.
             </p>
             <div className="grid sm:grid-cols-3 gap-6 mb-8">
               <div className="p-6 rounded-xl bg-card border border-border/50">
@@ -167,15 +172,17 @@ const About = () => {
               Ready to Get Started?
             </h2>
             <p className="text-muted-foreground mb-8">
-              Join the ESILV Marketplace community today. Whether you're looking to buy, sell, or exchange — 
-              we've got you covered.
+              Join the ESILV Marketplace community today. Whether you're looking to buy, sell, or
+              exchange — we've got you covered.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
               <Link to="/login">
                 <Button size="lg">Create Account</Button>
               </Link>
               <Link to="/products">
-                <Button size="lg" variant="outline">Browse Products</Button>
+                <Button size="lg" variant="outline">
+                  Browse Products
+                </Button>
               </Link>
             </div>
           </div>

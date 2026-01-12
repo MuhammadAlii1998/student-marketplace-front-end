@@ -73,8 +73,11 @@ const ChatList = () => {
     );
   }
 
-  const activeChats = chats?.filter((chat) => !isChatExpired(chat.expiresAt)) || [];
-  const expiredChats = chats?.filter((chat) => isChatExpired(chat.expiresAt)) || [];
+  // Ensure chats is always an array
+  const chatsList = Array.isArray(chats) ? chats : [];
+
+  const activeChats = chatsList.filter((chat) => !isChatExpired(chat.expiresAt));
+  const expiredChats = chatsList.filter((chat) => isChatExpired(chat.expiresAt));
 
   return (
     <Layout>

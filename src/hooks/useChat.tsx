@@ -52,9 +52,21 @@ export type SendMessageData = {
 export function useChats() {
   return useQuery<Chat[]>({
     queryKey: ['chats'],
-    queryFn: () => api.get<Chat[]>('/chats'),
+    queryFn: async () => {
+      const response = await api.get<Chat[] | { chats: Chat[] }>('/chats');
+
+      // Handle both response formats: array or object with chats property
+      if (Array.isArray(response)) {
+        return response;
+      } else if (response && typeof response === 'object' && 'chats' in response) {
+        return Array.isArray(response.chats) ? response.chats : [];
+      }
+
+      return [];
+    },
     staleTime: 1000 * 30, // 30 seconds
     refetchInterval: 1000 * 60, // refetch every minute
+    initialData: [], // Ensure data is always an array
   });
 }
 
@@ -72,9 +84,23 @@ export function useChat(chatId?: string) {
 export function useMessages(chatId?: string) {
   return useQuery<Message[]>({
     queryKey: ['messages', chatId],
-    queryFn: () => api.get<Message[]>(`/chats/${chatId}/messages`),
+    queryFn: async () => {
+      const response = await api.get<Message[] | { messages: Message[] }>(
+        `/chats/${chatId}/messages`
+      );
+
+      // Handle both response formats: array or object with messages property
+      if (Array.isArray(response)) {
+        return response;
+      } else if (response && typeof response === 'object' && 'messages' in response) {
+        return Array.isArray(response.messages) ? response.messages : [];
+      }
+
+      return [];
+    },
     enabled: !!chatId,
     staleTime: 1000 * 10, // 10 seconds
+    initialData: [], // Ensure data is always an array
   });
 }
 

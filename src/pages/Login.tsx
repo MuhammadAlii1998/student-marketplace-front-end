@@ -285,7 +285,7 @@ const Login = () => {
                       <Input
                         id="register-email"
                         type="email"
-                        placeholder="your.name@edu.devinci.fr"
+                        placeholder="your.name@edu.devinci.fr or @devinci.fr"
                         className="pl-10"
                         value={registerEmail}
                         onChange={(e) => setRegisterEmail(e.target.value)}
@@ -293,7 +293,7 @@ const Login = () => {
                       />
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Use your official ESILV email (@edu.devinci.fr)
+                      Use your official ESILV email (@edu.devinci.fr or @devinci.fr)
                     </p>
                   </div>
 

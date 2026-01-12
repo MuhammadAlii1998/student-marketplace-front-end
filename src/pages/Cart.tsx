@@ -12,7 +12,8 @@ const Cart = () => {
   const removeFromCart = useRemoveFromCart();
   const clearCart = useClearCart();
 
-  const cartItems = cart?.items || [];
+  // Ensure cartItems is always an array
+  const cartItems = Array.isArray(cart?.items) ? cart.items : [];
 
   const cartProducts = cartItems
     .map((item) => ({

@@ -41,16 +41,21 @@ export const useProducts = (filters?: ProductFilters) => {
   return useQuery<Product[]>({
     queryKey: ['products', filters],
     queryFn: async () => {
-      const response = await api.get<any>('/products', filters);
+      const response = await api.get<Product[] | { products: Product[] } | { data: Product[] }>(
+        '/products',
+        filters
+      );
       let products: Product[] = [];
 
       // Support multiple possible backend shapes: array, { products: [...] }, { data: [...] }
       if (Array.isArray(response)) {
         products = response as Product[];
-      } else if (response && Array.isArray(response.products)) {
-        products = response.products as Product[];
-      } else if (response && Array.isArray(response.data)) {
-        products = response.data as Product[];
+      } else if (response && typeof response === 'object') {
+        if ('products' in response && Array.isArray(response.products)) {
+          products = response.products as Product[];
+        } else if ('data' in response && Array.isArray(response.data)) {
+          products = response.data as Product[];
+        }
       } else {
         products = [];
       }
