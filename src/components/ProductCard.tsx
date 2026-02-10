@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Heart, MapPin, ShoppingCart, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
+import { cn, formatPrice } from '@/lib/utils';
 import { useAddToCart } from '@/hooks/useCart';
 import { useToggleFavorite } from '@/hooks/useFavorites';
 import { useIsAuthenticated } from '@/hooks/useAuth';
@@ -151,7 +151,7 @@ export function ProductCard({
           </h3>
         </div>
 
-        <p className="text-2xl font-bold text-primary mb-2">${price.toFixed(2)}</p>
+        <p className="text-2xl font-bold text-primary mb-2">{formatPrice(price)}</p>
 
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Badge variant="secondary" className="font-normal">

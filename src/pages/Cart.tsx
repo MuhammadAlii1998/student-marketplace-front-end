@@ -5,6 +5,7 @@ import { Minus, Plus, Trash2, ShoppingBag, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCart, useUpdateCartItem, useRemoveFromCart, useClearCart } from '@/hooks/useCart';
 import { Product } from '@/hooks/useProducts';
+import { formatPrice } from '@/lib/utils';
 
 const Cart = () => {
   const { data: cart, isLoading } = useCart();
@@ -132,7 +133,7 @@ const Cart = () => {
                   <p className="text-sm text-muted-foreground mb-2">
                     Sold by {product.seller?.name || 'Unknown Seller'}
                   </p>
-                  <p className="text-lg font-bold text-primary">${product.price.toFixed(2)}</p>
+                  <p className="text-lg font-bold text-primary">{formatPrice(product.price)}</p>
                 </div>
 
                 <div className="flex flex-col items-end justify-between">
@@ -179,11 +180,11 @@ const Cart = () => {
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span>${subtotal.toFixed(2)}</span>
+                  <span>{formatPrice(subtotal)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Service Fee (5%)</span>
-                  <span>${serviceFee.toFixed(2)}</span>
+                  <span>{formatPrice(serviceFee)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Shipping</span>
@@ -192,7 +193,7 @@ const Cart = () => {
                 <div className="border-t border-border pt-3">
                   <div className="flex justify-between text-lg font-bold">
                     <span>Total</span>
-                    <span className="text-primary">${total.toFixed(2)}</span>
+                    <span className="text-primary">{formatPrice(total)}</span>
                   </div>
                 </div>
               </div>

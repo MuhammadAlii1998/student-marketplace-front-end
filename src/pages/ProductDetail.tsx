@@ -25,7 +25,7 @@ import {
   Clock,
 } from 'lucide-react';
 import { useState } from 'react';
-import { cn } from '@/lib/utils';
+import { cn, formatPrice } from '@/lib/utils';
 import { toast } from 'sonner';
 
 const conditionColors = {
@@ -241,12 +241,12 @@ const ProductDetail = () => {
 
               <div className="flex items-baseline gap-3 mb-4">
                 <span className="text-3xl md:text-4xl font-bold text-primary">
-                  ${effectiveProduct.price.toFixed(2)}
+                  {formatPrice(effectiveProduct.price)}
                 </span>
                 {effectiveProduct.originalPrice && (
                   <>
                     <span className="text-lg text-muted-foreground line-through">
-                      ${effectiveProduct.originalPrice?.toFixed(2)}
+                      {formatPrice(effectiveProduct.originalPrice)}
                     </span>
                     <Badge className="bg-success text-success-foreground">Save {savings}%</Badge>
                   </>
