@@ -537,7 +537,7 @@ Backend Optimizations:
 │                   Production Setup                   │
 └──────────────────────────────────────────────────────┘
 
-Frontend (Netlify/Vercel):
+Frontend (Vercel):
 ┌─────────────────────────────────┐
 │  Build Process                  │
 │  1. npm run build              │

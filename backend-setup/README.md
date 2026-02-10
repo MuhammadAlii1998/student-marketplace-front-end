@@ -260,7 +260,7 @@ git push origin main
 Vercel will automatically redeploy.
 
 ### Step 3: Test Production
-1. Go to: https://esilv-marketplace.netlify.app/sell
+1. Go to: https://esilv-store.vercel.app/sell
 2. Login
 3. Create a listing with images
 4. Verify it works!
@@ -303,7 +303,7 @@ Deployment:
 - [ ] Added environment variables to Vercel
 - [ ] Pushed to GitHub
 - [ ] Verified Vercel deployment succeeded
-- [ ] Tested on production (esilv-marketplace.netlify.app/sell)
+- [ ] Tested on production (esilv-store.vercel.app/sell)
 
 ---
 
@@ -340,7 +340,7 @@ npm install cloudinary multer multer-storage-cloudinary
 ## 📚 REFERENCE LINKS
 
 - Cloudinary Dashboard: https://console.cloudinary.com/console/c-47e82c5e7a2
-- Frontend Sell Page: http://localhost:8082/sell (local) or https://esilv-marketplace.netlify.app/sell (prod)
+- Frontend Sell Page: http://localhost:8082/sell (local) or https://esilv-store.vercel.app/sell (prod)
 - Backend API: http://localhost:3000/api (local) or https://student-marketplace-backend.vercel.app/api (prod)
 
 ---
