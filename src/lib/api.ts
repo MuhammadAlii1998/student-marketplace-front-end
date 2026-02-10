@@ -8,7 +8,15 @@ type RequestInitLike = RequestInit & {
 function buildUrl(path: string, params?: Record<string, string | number | boolean | undefined>) {
   // Remove leading slash from path to properly concatenate with BASE_URL
   const cleanPath = path.startsWith('/') ? path.slice(1) : path;
-  const fullUrl = `${BASE_URL}/${cleanPath}`;
+  
+  // Handle relative URLs (like /api) by using window.location.origin as the base
+  let fullUrl: string;
+  if (BASE_URL.startsWith('/')) {
+    fullUrl = `${window.location.origin}${BASE_URL}/${cleanPath}`;
+  } else {
+    fullUrl = `${BASE_URL}/${cleanPath}`;
+  }
+  
   const url = new URL(fullUrl);
 
   if (params) {
